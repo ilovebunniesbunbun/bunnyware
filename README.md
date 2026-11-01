@@ -211,7 +211,6 @@ Bunnyware CS2 builds on and bundles work from several open-source projects:
 - **Dear ImGui**, **meshoptimizer**, **NanoSVG**, and **zstd** are vendored under `src/external/`.
 - **Lucide** icons are used for the UI (ISC).
 - The **web radar** frontend and assets are derived from **FC2observ** (GPL-3.0), with map images under MIT.
-- Radar assets and tooling: thanks to **[@typedef-FC](https://github.com/typedef-FC)**.
 - The build links against system libraries including **GLFW**, **GLEW**, **GLM**, **spdlog**, **nlohmann/json**, **OpenGL**, **X11/Xext**, **Wayland/Wayland-EGL**, and **D-Bus**.
 
 See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the complete attribution and license details.
