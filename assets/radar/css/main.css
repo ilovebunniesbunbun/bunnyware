@@ -1,0 +1,38 @@
+/* Explicitly transparent root — prevents WebView2 from compositing a white
+   background before the first paint, which shows as a border on transparent
+   overlay windows. Both html and body must be set; one alone is insufficient
+   in some Chromium/WebKit versions. */
+html {
+	background: transparent;
+}
+
+body {
+	margin: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-family: Arial, Helvetica, sans-serif;
+	-moz-user-select: none;
+	user-select: none;
+	cursor: not-allowed;
+}
+
+body > div {
+	color: white;
+	height: 90vh;
+	width: 90vh;
+	max-width: 90vh;
+	max-height: 90vw;
+	position: relative;
+	overflow: hidden;
+}
+
+#dragarea {
+	-webkit-app-region: drag;
+	height: calc(96vh - 20px);
+	width: calc(96vw - 20px);
+	top: 20px;
+	left: 20px;
+	position: fixed;
+	z-index: 1000;
+}

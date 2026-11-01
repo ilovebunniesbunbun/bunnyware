@@ -1,0 +1,1658 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sound ESP Tuner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #091014;
+  --surface: #0f171c;
+  --surface-2: #162027;
+  --line: #243540;
+  --fg: #e6edf0;
+  --muted: #8798a2;
+  --accent: #ffb02e;
+  --accent-ink: #1a1200;
+  --enemy: #ff5147;
+  --player: #5ad6cf;
+  --quiet: #267880;
+  --grid: #14212a;
+  --grid-major: #243845;
+  --track: #2a3a44;
+  --font-ui: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.4;
+  padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+h1, h2, h3, p { margin: 0; }
+
+.app { max-width: 1440px; margin: 0 auto; display: grid; gap: 16px; }
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+.title { min-width: 0; max-width: 62ch; display: grid; gap: 4px; }
+.title h1 { font-size: 28px; font-weight: 700; letter-spacing: 0.01em; text-wrap: balance; }
+.title p { color: var(--muted); }
+.top-actions { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+
+.preset { display: grid; gap: 4px; }
+select {
+  font: inherit;
+  font-size: 14px;
+  color: var(--fg);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 7px 10px;
+  min-width: 170px;
+}
+
+.btn {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--fg);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+.btn:hover { border-color: var(--muted); }
+.btn:disabled { opacity: 0.4; cursor: default; border-color: var(--line); }
+.btn.sound { min-width: 112px; }
+.btn.sound[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+:is(.btn, select, input, canvas):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-rows: auto 1fr;
+  grid-template-areas: "stage panel" "lower panel";
+  gap: 16px;
+  align-items: start;
+}
+.stage { grid-area: stage; display: grid; gap: 10px; min-width: 0; }
+.lower { grid-area: lower; display: grid; gap: 16px; min-width: 0; }
+.panel {
+  grid-area: panel;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 4px 16px 16px;
+}
+
+.viewport {
+  position: relative;
+  height: clamp(340px, 60vh, 620px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg);
+}
+#scene { display: block; width: 100%; height: 100%; touch-action: none; }
+
+.toolbar { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none; }
+.toolbar .btn { pointer-events: auto; background: color-mix(in srgb, var(--surface) 86%, transparent); }
+.toolbar .gap { width: 8px; }
+
+.legend {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 9px;
+  font-size: 12px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  pointer-events: none;
+}
+.legend i { width: 84px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--quiet), var(--accent), var(--enemy)); }
+
+.gl-error { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+.gl-error[hidden] { display: none; }
+
+.readout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.pulse {
+  --level: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: calc(0.2 + var(--level) * 0.8);
+  box-shadow: 0 0 calc(var(--level) * 16px) var(--accent);
+  flex: none;
+}
+.readout-main { display: flex; align-items: baseline; gap: 10px; }
+.readout-dist { font-family: var(--font-mono); font-size: 30px; font-weight: 500; font-variant-numeric: tabular-nums; min-width: 6.5ch; }
+.readout-name { color: var(--muted); font-weight: 600; letter-spacing: 0.04em; }
+.readout-line { flex: 1 1 260px; min-width: 0; color: var(--fg); font-variant-numeric: tabular-nums; }
+
+.chip {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 4px;
+  border: 1px solid var(--muted);
+  color: var(--muted);
+}
+.chip[data-tone="hard"] { background: var(--enemy); border-color: var(--enemy); color: var(--bg); }
+.chip[data-tone="medium"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.chip[data-tone="low"] { border-color: var(--quiet); color: var(--player); }
+.chip[data-tone="silent"] { border-style: dashed; }
+
+.hint { color: var(--muted); font-size: 13px; max-width: 90ch; }
+
+.curves { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.curve { min-width: 0; padding: 10px 12px 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.curve-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.curve-val { font-family: var(--font-mono); font-size: 13px; color: var(--accent); font-variant-numeric: tabular-nums; }
+.chart { display: block; width: 100%; height: 118px; }
+
+.markers { min-width: 0; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; display: grid; gap: 8px; }
+.markers-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; align-items: baseline; }
+.markers-head span:last-child { color: var(--muted); font-size: 13px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { padding: 7px 10px; text-align: left; white-space: nowrap; border-top: 1px solid var(--line); }
+thead th { border-top: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+tbody td { font-family: var(--font-mono); font-size: 13px; }
+tbody th { font-weight: 700; }
+tbody tr[data-id] { cursor: pointer; }
+tbody tr.is-selected { background: var(--surface-2); }
+tbody tr.is-driver th::after { content: "beeping"; margin-left: 8px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--enemy); }
+td.empty { color: var(--muted); font-family: var(--font-ui); font-size: 14px; }
+.row-remove { font: inherit; font-size: 12px; color: var(--muted); background: none; border: 1px solid var(--line); border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+.row-remove:hover { color: var(--fg); border-color: var(--muted); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.group { display: grid; gap: 14px; padding-block: 16px; border-bottom: 1px solid var(--line); }
+.group:last-child { border-bottom: 0; padding-bottom: 0; }
+.field { display: grid; gap: 4px; }
+.field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.field-head label { font-weight: 500; }
+.field-head output { font-family: var(--font-mono); font-size: 13px; color: var(--accent); font-variant-numeric: tabular-nums; }
+.note { font-size: 12.5px; color: var(--muted); }
+.warn { font-size: 12.5px; color: var(--enemy); }
+
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 20px; margin: 0; background: transparent; cursor: pointer; }
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent) var(--fill, 50%), var(--track) var(--fill, 50%));
+}
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent) var(--fill, 50%), var(--track) var(--fill, 50%));
+}
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px; border-radius: 50%; background: var(--fg); border: 2px solid var(--bg); }
+input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--fg); border: 2px solid var(--bg); }
+
+.export-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.export pre {
+  margin: 0;
+  padding: 10px 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+@media (max-width: 980px) {
+  .layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; grid-template-areas: "stage" "panel" "lower"; }
+  .panel { position: static; max-height: none; }
+}
+@media (max-width: 520px) {
+  .title h1 { font-size: 24px; }
+  .readout-dist { font-size: 26px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pulse { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="top">
+    <div class="title">
+      <h1>Sound ESP Tuner</h1>
+      <p>Tune range, cone, pitch and volume, then drag markers around the player to hear how near and far enemies sound.</p>
+    </div>
+    <div class="top-actions">
+      <label class="preset" for="preset">
+        <span class="eyebrow">Preset</span>
+        <select id="preset">
+          <option value="starter">Starter</option>
+          <option value="front">Front cone only</option>
+          <option value="sonar">Wide sonar</option>
+          <option value="custom">Custom</option>
+        </select>
+      </label>
+      <button id="sound" class="btn sound" type="button" aria-pressed="false">Sound off</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main class="stage">
+      <div class="viewport" id="viewport">
+        <canvas id="scene" tabindex="0" aria-label="3D view of the player, the beep range and enemy markers"></canvas>
+        <div class="toolbar" role="toolbar" aria-label="Scene tools">
+          <button id="addMarker" class="btn" type="button">Add marker</button>
+          <button id="removeMarker" class="btn" type="button">Remove marker</button>
+          <span class="gap"></span>
+          <button id="viewTop" class="btn" type="button">Top-down</button>
+          <button id="viewAngled" class="btn" type="button">Angled</button>
+          <button id="viewReset" class="btn" type="button">Reset view</button>
+        </div>
+        <div class="legend" aria-hidden="true"><span>Quiet</span><i></i><span>Loud</span></div>
+        <p class="gl-error" id="glError" hidden>The 3D view needs WebGL, which this browser did not start. The controls, charts and sound still work.</p>
+      </div>
+
+      <div class="readout">
+        <span class="pulse" id="pulse" aria-hidden="true"></span>
+        <div class="readout-main">
+          <span class="readout-dist" id="hudDist">--</span>
+          <span class="readout-name" id="hudName"></span>
+        </div>
+        <span class="chip" id="hudChip" data-tone="silent">Idle</span>
+        <p class="readout-line" id="hudLine"></p>
+      </div>
+
+      <p class="hint">Drag a red marker to move it. Drag the amber handle to turn the player. Double-click the ground to add a marker. Drag empty ground to orbit, right-drag to pan, scroll or pinch to zoom. Ground color shows the volume an enemy standing there would produce.</p>
+    </main>
+
+    <div class="lower">
+      <section class="curves" aria-label="Response by distance">
+        <div class="curve">
+          <div class="curve-head"><h3 class="eyebrow">Volume</h3><span class="curve-val" id="valVolume">--</span></div>
+          <canvas id="chartVolume" class="chart"></canvas>
+        </div>
+        <div class="curve">
+          <div class="curve-head"><h3 class="eyebrow">Gap between beeps</h3><span class="curve-val" id="valGap">--</span></div>
+          <canvas id="chartGap" class="chart"></canvas>
+        </div>
+        <div class="curve">
+          <div class="curve-head"><h3 class="eyebrow">Pitch</h3><span class="curve-val" id="valPitch">--</span></div>
+          <canvas id="chartPitch" class="chart"></canvas>
+        </div>
+      </section>
+
+      <section class="markers">
+        <div class="markers-head">
+          <h3 class="eyebrow">Markers</h3>
+          <span>The nearest marker that is audible drives the beep, as the overlay does today.</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Marker</th>
+                <th scope="col">Distance</th>
+                <th scope="col">Off axis</th>
+                <th scope="col">Cone</th>
+                <th scope="col">Volume</th>
+                <th scope="col">Gap</th>
+                <th scope="col"><span class="sr">Remove</span></th>
+              </tr>
+            </thead>
+            <tbody id="markerRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <aside class="panel" aria-label="Beep settings">
+      <div id="controls"></div>
+      <section class="group export">
+        <div class="export-head">
+          <h2 class="eyebrow">Settings for the overlay</h2>
+          <button id="copySettings" class="btn" type="button">Copy</button>
+        </div>
+        <pre id="exportBox"></pre>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const PRESETS = {
+  starter: { maxRange: 30, fullAt: 3, curve: 1.3, fov: 110, outsideFov: 0, slowInterval: 1.0, fastInterval: 0.15, pitchFar: 500, pitchNear: 1100, volume: 80, volFar: 25, volNear: 100 },
+  front: { maxRange: 25, fullAt: 4, curve: 1.6, fov: 90, outsideFov: 0, slowInterval: 0.9, fastInterval: 0.15, pitchFar: 420, pitchNear: 1400, volume: 85, volFar: 15, volNear: 100 },
+  sonar: { maxRange: 50, fullAt: 5, curve: 0.8, fov: 180, outsideFov: 0, slowInterval: 1.6, fastInterval: 0.35, pitchFar: 300, pitchNear: 600, volume: 60, volFar: 20, volNear: 90 }
+}
+
+const CONTROL_GROUPS = [
+  {
+    title: 'Distance',
+    items: [
+      { key: 'maxRange', label: 'Max range', min: 8, max: 60, step: 1, unit: ' m', digits: 0 },
+      { key: 'fullAt', label: 'Full intensity at', min: 0, max: 29, step: 0.5, unit: ' m', digits: 1, note: 'Closer than this the beep stops getting more intense.' },
+      { key: 'curve', label: 'Falloff curve', min: 0.4, max: 3, step: 0.1, unit: '', digits: 1, note: 'Above 1 stays calm until the enemy is close. Below 1 gets urgent early.' }
+    ]
+  },
+  {
+    title: 'Field of view',
+    items: [
+      { key: 'fov', label: 'Beep cone', min: 10, max: 180, step: 5, unit: '°', digits: 0, note: 'Capped at 180. There is no all-around option.' },
+      { key: 'outsideFov', label: 'Volume outside cone', min: 0, max: 100, step: 5, unit: '%', digits: 0, note: '0 silences enemies you are not facing. The overlay uses 0.' }
+    ]
+  },
+  {
+    title: 'Frequency',
+    items: [
+      { key: 'slowInterval', label: 'Beep gap at max range', min: 0.1, max: 2.5, step: 0.05, unit: ' s', digits: 2 },
+      { key: 'fastInterval', label: 'Beep gap at full intensity', min: 0.05, max: 2.5, step: 0.05, unit: ' s', digits: 2 },
+      { key: 'pitchFar', label: 'Pitch at max range', min: 200, max: 2400, step: 10, unit: ' Hz', digits: 0 },
+      { key: 'pitchNear', label: 'Pitch at full intensity', min: 200, max: 2400, step: 10, unit: ' Hz', digits: 0 }
+    ]
+  },
+  {
+    title: 'Volume',
+    items: [
+      { key: 'volume', label: 'Master volume', min: 0, max: 100, step: 5, unit: '%', digits: 0 },
+      { key: 'volFar', label: 'At max range', min: 0, max: 100, step: 5, unit: '%', digits: 0 },
+      { key: 'volNear', label: 'At full intensity', min: 0, max: 100, step: 5, unit: '%', digits: 0 }
+    ]
+  }
+]
+
+const FLOOR_INTERVAL = 0.15
+const WARNINGS = {
+  fastInterval: (value) => (value < FLOOR_INTERVAL ? 'Below the 0.15 s floor the current sound player enforces.' : '')
+}
+
+const TONE_LABELS = { hard: 'Hard', medium: 'Medium', low: 'Low', silent: 'Silent' }
+const GROUND_LIMIT = 95
+const MAX_MARKERS = 6
+const AUDIBLE_FLOOR = 0.004
+const LUT_SIZE = 512
+const HEAT_SIZE = 256
+const CHART_STEPS = 120
+const BLIP_SECONDS = 0.085
+const RIPPLE_SECONDS = 0.7
+const DEG_TO_RAD = Math.PI / 180
+const RAD_TO_DEG = 180 / Math.PI
+
+const rootStyle = getComputedStyle(document.documentElement)
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+const cfg = { ...PRESETS.starter }
+const world = {
+  player: { x: 0, z: 0, bearing: 0 },
+  enemies: [
+    { id: 1, name: 'E1', x: 5, z: -13 },
+    { id: 2, name: 'E2', x: -11, z: 9 }
+  ],
+  selectedId: 1,
+  nextId: 3,
+  preset: 'starter',
+  sound: false
+}
+const beeper = { armed: false, last: 0, pulse: 0 }
+const audio = { ctx: null }
+const controls = {}
+
+const els = {
+  preset: document.getElementById('preset'),
+  sound: document.getElementById('sound'),
+  add: document.getElementById('addMarker'),
+  remove: document.getElementById('removeMarker'),
+  viewTop: document.getElementById('viewTop'),
+  viewAngled: document.getElementById('viewAngled'),
+  viewReset: document.getElementById('viewReset'),
+  pulse: document.getElementById('pulse'),
+  dist: document.getElementById('hudDist'),
+  name: document.getElementById('hudName'),
+  chip: document.getElementById('hudChip'),
+  line: document.getElementById('hudLine'),
+  rows: document.getElementById('markerRows'),
+  exportBox: document.getElementById('exportBox'),
+  copy: document.getElementById('copySettings')
+}
+
+function token(name) {
+  return rootStyle.getPropertyValue(name).trim()
+}
+
+function parseHex(hex) {
+  const value = parseInt(hex.slice(1), 16)
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255]
+}
+
+const RAMP = [token('--quiet'), token('--accent'), token('--enemy')].map(parseHex)
+const MONO = token('--font-mono')
+
+function noop() {}
+
+function clamp(value, low, high) {
+  return Math.min(high, Math.max(low, value))
+}
+
+function lerp(from, to, amount) {
+  return from + (to - from) * amount
+}
+
+function wrapAngle(angle) {
+  return Math.atan2(Math.sin(angle), Math.cos(angle))
+}
+
+function round(value, digits) {
+  const scale = 10 ** digits
+  return Math.round(value * scale) / scale
+}
+
+function setText(element, text) {
+  if (element.textContent !== text) element.textContent = text
+}
+
+function formatMeters(value) {
+  return `${Number.isInteger(value) ? value : value.toFixed(1)} m`
+}
+
+function closenessAt(distance) {
+  if (distance > cfg.maxRange) return null
+  const span = Math.max(cfg.maxRange - cfg.fullAt, 0.001)
+  return Math.pow(clamp((cfg.maxRange - distance) / span, 0, 1), cfg.curve)
+}
+
+function planFor(distance, insideCone) {
+  const strength = closenessAt(distance)
+  if (strength === null) return null
+  const fast = cfg.fastInterval
+  const slow = Math.max(cfg.slowInterval, fast)
+  const coneGain = insideCone ? 1 : cfg.outsideFov / 100
+  return {
+    strength,
+    insideCone,
+    volume: (cfg.volume / 100) * lerp(cfg.volFar / 100, cfg.volNear / 100, strength) * coneGain,
+    interval: lerp(slow, fast, strength),
+    pitch: cfg.pitchFar * Math.pow(cfg.pitchNear / cfg.pitchFar, strength)
+  }
+}
+
+function evaluateEnemy(enemy) {
+  const dx = enemy.x - world.player.x
+  const dz = enemy.z - world.player.z
+  const distance = Math.hypot(dx, dz)
+  const offAxis = Math.abs(wrapAngle(Math.atan2(dx, -dz) - world.player.bearing)) * RAD_TO_DEG
+  const insideCone = offAxis <= cfg.fov / 2 + 0.0001
+  return { enemy, distance, offAxis, insideCone, plan: planFor(distance, insideCone) }
+}
+
+function pickDriver(readings) {
+  let best = null
+  readings.forEach((reading) => {
+    if (!reading.plan || reading.plan.volume < AUDIBLE_FLOOR) return
+    if (!best || reading.distance < best.distance) best = reading
+  })
+  return best
+}
+
+function findEnemy(id) {
+  return world.enemies.find((enemy) => enemy.id === id) || null
+}
+
+function addEnemy(x, z) {
+  if (world.enemies.length >= MAX_MARKERS) return
+  const id = world.nextId
+  world.nextId += 1
+  world.enemies.push({
+    id,
+    name: `E${id}`,
+    x: clamp(x, -GROUND_LIMIT, GROUND_LIMIT),
+    z: clamp(z, -GROUND_LIMIT, GROUND_LIMIT)
+  })
+  world.selectedId = id
+}
+
+function addEnemyAhead() {
+  const bearing = world.player.bearing + (Math.random() - 0.5) * 1.1
+  const reach = cfg.maxRange * (0.35 + Math.random() * 0.3)
+  addEnemy(world.player.x + Math.sin(bearing) * reach, world.player.z - Math.cos(bearing) * reach)
+}
+
+function removeEnemy(id) {
+  world.enemies = world.enemies.filter((enemy) => enemy.id !== id)
+  if (world.selectedId === id) world.selectedId = null
+}
+
+function constrain(changedKey) {
+  cfg.fullAt = Math.min(cfg.fullAt, cfg.maxRange - 1)
+  if (cfg.slowInterval >= cfg.fastInterval) return
+  if (changedKey === 'slowInterval') cfg.fastInterval = cfg.slowInterval
+  else cfg.slowInterval = cfg.fastInterval
+}
+
+function exportSettings() {
+  return {
+    proximity_beep_max_range: cfg.maxRange,
+    proximity_beep_fov: cfg.fov,
+    proximity_beep_slow_interval: round(Math.max(cfg.slowInterval, cfg.fastInterval), 2),
+    proximity_beep_fast_interval: round(cfg.fastInterval, 2),
+    proximity_beep_volume: round(cfg.volume / 100, 2)
+  }
+}
+
+function fieldMarkup(item) {
+  const note = item.note ? `<p class="note">${item.note}</p>` : ''
+  return `
+    <div class="field">
+      <div class="field-head">
+        <label for="c-${item.key}">${item.label}</label>
+        <output id="o-${item.key}" for="c-${item.key}"></output>
+      </div>
+      <input id="c-${item.key}" type="range" min="${item.min}" max="${item.max}" step="${item.step}">
+      ${note}
+      <p class="warn" id="w-${item.key}" hidden></p>
+    </div>`
+}
+
+function buildControls() {
+  const host = document.getElementById('controls')
+  host.innerHTML = CONTROL_GROUPS.map(
+    (group) => `
+    <section class="group">
+      <h2 class="eyebrow">${group.title}</h2>
+      ${group.items.map(fieldMarkup).join('')}
+    </section>`
+  ).join('')
+  CONTROL_GROUPS.forEach((group) =>
+    group.items.forEach((item) => {
+      const input = document.getElementById(`c-${item.key}`)
+      controls[item.key] = {
+        item,
+        input,
+        output: document.getElementById(`o-${item.key}`),
+        warn: document.getElementById(`w-${item.key}`)
+      }
+      input.addEventListener('input', () => onControlInput(item.key, Number(input.value)))
+    })
+  )
+}
+
+function syncControls() {
+  Object.values(controls).forEach(({ item, input, output, warn }) => {
+    if (item.key === 'fullAt') input.max = String(cfg.maxRange - 1)
+    const value = cfg[item.key]
+    input.value = String(value)
+    const fill = ((value - item.min) / (Number(input.max) - item.min)) * 100
+    input.style.setProperty('--fill', `${clamp(fill, 0, 100)}%`)
+    output.textContent = `${value.toFixed(item.digits)}${item.unit}`
+    const warning = WARNINGS[item.key] ? WARNINGS[item.key](value) : ''
+    warn.hidden = !warning
+    warn.textContent = warning
+  })
+  els.exportBox.textContent = JSON.stringify(exportSettings(), null, 2)
+}
+
+function setPreset(name) {
+  world.preset = name
+  els.preset.value = name
+}
+
+function onControlInput(key, value) {
+  cfg[key] = value
+  constrain(key)
+  setPreset('custom')
+  syncControls()
+}
+
+function applyPreset(name) {
+  if (!PRESETS[name]) return
+  Object.assign(cfg, PRESETS[name])
+  constrain('')
+  setPreset(name)
+  syncControls()
+}
+
+function flashCopyLabel(label) {
+  els.copy.textContent = label
+  setTimeout(() => {
+    els.copy.textContent = 'Copy'
+  }, 1600)
+}
+
+function selectExportText() {
+  const range = document.createRange()
+  range.selectNodeContents(els.exportBox)
+  const selection = window.getSelection()
+  selection.removeAllRanges()
+  selection.addRange(range)
+}
+
+function copySettings() {
+  if (!navigator.clipboard) {
+    selectExportText()
+    flashCopyLabel('Selected')
+    return
+  }
+  navigator.clipboard
+    .writeText(els.exportBox.textContent)
+    .then(() => flashCopyLabel('Copied'))
+    .catch(() => {
+      selectExportText()
+      flashCopyLabel('Selected')
+    })
+}
+
+function playBlip(pitch, volume) {
+  const ctx = audio.ctx
+  const start = ctx.currentTime
+  const oscillator = ctx.createOscillator()
+  const gain = ctx.createGain()
+  oscillator.type = 'triangle'
+  oscillator.frequency.setValueAtTime(pitch, start)
+  gain.gain.setValueAtTime(0.0001, start)
+  gain.gain.exponentialRampToValueAtTime(Math.max(volume * 0.5, 0.0002), start + 0.008)
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + BLIP_SECONDS)
+  oscillator.connect(gain)
+  gain.connect(ctx.destination)
+  oscillator.start(start)
+  oscillator.stop(start + BLIP_SECONDS + 0.02)
+}
+
+function renderSoundButton() {
+  els.sound.textContent = world.sound ? 'Sound on' : 'Sound off'
+  els.sound.setAttribute('aria-pressed', String(world.sound))
+}
+
+function toggleSound() {
+  if (!audio.ctx) {
+    const Context = window.AudioContext || window.webkitAudioContext
+    if (!Context) {
+      els.sound.textContent = 'No audio'
+      els.sound.disabled = true
+      return
+    }
+    audio.ctx = new Context()
+  }
+  world.sound = !world.sound
+  if (world.sound) audio.ctx.resume()
+  beeper.armed = false
+  renderSoundButton()
+}
+
+function fireBeep(driver, now) {
+  beeper.pulse = 1
+  view.ripple(driver, now)
+  if (world.sound && audio.ctx) playBlip(driver.plan.pitch, driver.plan.volume)
+}
+
+function stepBeeper(now, driver) {
+  if (!driver) {
+    beeper.armed = false
+    return
+  }
+  if (beeper.armed && now - beeper.last < driver.plan.interval) return
+  beeper.armed = true
+  beeper.last = now
+  fireBeep(driver, now)
+}
+
+function toneFor(strength) {
+  if (strength >= 0.66) return 'hard'
+  if (strength >= 0.33) return 'medium'
+  return 'low'
+}
+
+function silentReason(reading) {
+  const name = reading.enemy.name
+  if (!reading.plan) return `${name} is past the ${formatMeters(cfg.maxRange)} range.`
+  if (!reading.insideCone) return `${name} is ${Math.round(reading.offAxis)}° off axis, outside the ${cfg.fov}° cone.`
+  return `Volume is zero at ${reading.distance.toFixed(1)} m.`
+}
+
+function describe(readings, driver) {
+  if (!readings.length) {
+    return { distance: '--', name: '', tone: 'silent', line: 'Add a marker to hear how it sounds.' }
+  }
+  if (driver) {
+    const { plan } = driver
+    return {
+      distance: `${driver.distance.toFixed(1)} m`,
+      name: driver.enemy.name,
+      tone: toneFor(plan.strength),
+      line: `${Math.round(plan.volume * 100)}% volume, a beep every ${plan.interval.toFixed(2)} s at ${Math.round(plan.pitch)} Hz.`
+    }
+  }
+  const nearest = readings.reduce((best, reading) => (reading.distance < best.distance ? reading : best))
+  return {
+    distance: `${nearest.distance.toFixed(1)} m`,
+    name: nearest.enemy.name,
+    tone: 'silent',
+    line: silentReason(nearest)
+  }
+}
+
+function renderReadout(readings, driver, dt) {
+  const info = describe(readings, driver)
+  setText(els.dist, info.distance)
+  setText(els.name, info.name)
+  setText(els.chip, TONE_LABELS[info.tone] || 'Idle')
+  if (!readings.length) setText(els.chip, 'Idle')
+  els.chip.dataset.tone = info.tone
+  setText(els.line, info.line)
+  const level = Math.max(0, beeper.pulse - dt * 5)
+  if (level !== beeper.pulse) els.pulse.style.setProperty('--level', level.toFixed(2))
+  beeper.pulse = level
+}
+
+let markerCache = ''
+
+function renderMarkers(readings, driver) {
+  const rows = readings
+    .map((reading) => {
+      const { enemy, distance, offAxis, insideCone, plan } = reading
+      const audible = plan && plan.volume >= AUDIBLE_FLOOR
+      const volume = plan ? `${Math.round(plan.volume * 100)}%` : 'Out of range'
+      const gap = audible ? `${plan.interval.toFixed(2)} s` : '-'
+      const classes = [
+        enemy.id === world.selectedId ? 'is-selected' : '',
+        driver && driver.enemy.id === enemy.id ? 'is-driver' : ''
+      ].join(' ')
+      return `<tr data-id="${enemy.id}" class="${classes}"><th scope="row">${enemy.name}</th><td>${distance.toFixed(1)} m</td><td>${Math.round(offAxis)}°</td><td>${insideCone ? 'Inside' : 'Outside'}</td><td>${volume}</td><td>${gap}</td><td><button class="row-remove" type="button" data-remove="${enemy.id}" aria-label="Remove ${enemy.name}">Remove</button></td></tr>`
+    })
+    .join('')
+  if (rows === markerCache) return
+  markerCache = rows
+  els.rows.innerHTML =
+    rows || '<tr><td class="empty" colspan="7">No markers yet. Use Add marker or double-click the ground.</td></tr>'
+}
+
+function renderToolbar() {
+  els.remove.disabled = world.selectedId === null
+  els.add.disabled = world.enemies.length >= MAX_MARKERS
+}
+
+const chartDefs = [
+  {
+    id: 'chartVolume',
+    valueId: 'valVolume',
+    showOutside: true,
+    sample: (distance, inside) => planFor(distance, inside).volume,
+    axis: () => ({ min: 0, max: 1, top: '100%', bottom: '0%' }),
+    format: (value) => `${Math.round(value * 100)}%`
+  },
+  {
+    id: 'chartGap',
+    valueId: 'valGap',
+    showOutside: false,
+    sample: (distance) => planFor(distance, true).interval,
+    axis: () => {
+      const slow = Math.max(cfg.slowInterval, cfg.fastInterval)
+      return { min: cfg.fastInterval, max: slow, top: `${slow.toFixed(2)} s`, bottom: `${cfg.fastInterval.toFixed(2)} s` }
+    },
+    format: (value) => `${value.toFixed(2)} s`
+  },
+  {
+    id: 'chartPitch',
+    valueId: 'valPitch',
+    showOutside: false,
+    sample: (distance) => planFor(distance, true).pitch,
+    axis: () => {
+      const low = Math.min(cfg.pitchFar, cfg.pitchNear)
+      const high = Math.max(cfg.pitchFar, cfg.pitchNear)
+      return { min: low, max: high, top: `${high} Hz`, bottom: `${low} Hz` }
+    },
+    format: (value) => `${Math.round(value)} Hz`
+  }
+]
+
+chartDefs.forEach((def) => {
+  def.canvas = document.getElementById(def.id)
+  def.valueEl = document.getElementById(def.valueId)
+})
+
+function drawChart(def, driver) {
+  const width = def.canvas.clientWidth
+  const height = def.canvas.clientHeight
+  if (!width || !height) return
+  const ratio = window.devicePixelRatio || 1
+  def.canvas.width = Math.round(width * ratio)
+  def.canvas.height = Math.round(height * ratio)
+  const ctx = def.canvas.getContext('2d')
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
+  ctx.clearRect(0, 0, width, height)
+
+  const plot = { left: 50, right: 10, top: 10, bottom: 22 }
+  const plotWidth = width - plot.left - plot.right
+  const plotHeight = height - plot.top - plot.bottom
+  const axis = def.axis()
+  const span = axis.max - axis.min
+
+  function xAt(distance) {
+    return plot.left + (distance / cfg.maxRange) * plotWidth
+  }
+
+  function yAt(value) {
+    if (span < 1e-9) return plot.top + plotHeight / 2
+    return plot.top + plotHeight - ((value - axis.min) / span) * plotHeight
+  }
+
+  function trace(inside, color, dash) {
+    ctx.beginPath()
+    for (let step = 0; step <= CHART_STEPS; step++) {
+      const distance = (step / CHART_STEPS) * cfg.maxRange
+      const x = xAt(distance)
+      const y = yAt(def.sample(distance, inside))
+      if (step === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    }
+    ctx.setLineDash(dash)
+    ctx.strokeStyle = color
+    ctx.lineWidth = 2
+    ctx.stroke()
+    ctx.setLineDash([])
+  }
+
+  ctx.font = `11px ${MONO}`
+  ctx.strokeStyle = token('--line')
+  ctx.lineWidth = 1
+  ;[plot.top, plot.top + plotHeight / 2, plot.top + plotHeight].forEach((y) => {
+    ctx.beginPath()
+    ctx.moveTo(plot.left, y + 0.5)
+    ctx.lineTo(plot.left + plotWidth, y + 0.5)
+    ctx.stroke()
+  })
+
+  ctx.fillStyle = token('--muted')
+  ctx.textAlign = 'right'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(axis.top, plot.left - 6, plot.top)
+  ctx.fillText(axis.bottom, plot.left - 6, plot.top + plotHeight)
+  ctx.textBaseline = 'alphabetic'
+  ctx.textAlign = 'left'
+  ctx.fillText('0 m', plot.left, height - 6)
+  ctx.textAlign = 'center'
+  ctx.fillText(formatMeters(cfg.maxRange / 2), plot.left + plotWidth / 2, height - 6)
+  ctx.textAlign = 'right'
+  ctx.fillText(formatMeters(cfg.maxRange), plot.left + plotWidth, height - 6)
+
+  if (def.showOutside && cfg.fov < 359.5 && cfg.outsideFov < 100) trace(false, token('--muted'), [4, 4])
+  trace(true, token('--accent'), [])
+
+  if (!driver) return
+  const markerX = xAt(driver.distance)
+  ctx.strokeStyle = token('--enemy')
+  ctx.setLineDash([3, 3])
+  ctx.beginPath()
+  ctx.moveTo(markerX, plot.top)
+  ctx.lineTo(markerX, plot.top + plotHeight)
+  ctx.stroke()
+  ctx.setLineDash([])
+  ctx.fillStyle = token('--enemy')
+  ctx.beginPath()
+  ctx.arc(markerX, yAt(def.sample(driver.distance, driver.insideCone)), 4, 0, Math.PI * 2)
+  ctx.fill()
+}
+
+let chartKey = ''
+
+function renderCharts(driver, cfgKey) {
+  const widths = chartDefs.map((def) => def.canvas.clientWidth).join()
+  const marker = driver ? `${driver.distance.toFixed(1)}${driver.insideCone}` : 'none'
+  const key = `${cfgKey}|${marker}|${widths}`
+  chartDefs.forEach((def) => {
+    const value = driver ? def.format(def.sample(driver.distance, driver.insideCone)) : '--'
+    setText(def.valueEl, value)
+  })
+  if (key === chartKey) return
+  chartKey = key
+  chartDefs.forEach((def) => drawChart(def, driver))
+}
+
+function heatRgb(volume) {
+  const position = clamp(volume, 0, 1) * (RAMP.length - 1)
+  const index = Math.min(Math.floor(position), RAMP.length - 2)
+  const mix = position - index
+  return RAMP[index].map((channel, i) => lerp(channel, RAMP[index + 1][i], mix))
+}
+
+function writeHeat(target, offset, volume) {
+  if (volume < AUDIBLE_FLOOR) {
+    target[offset] = 0
+    target[offset + 1] = 0
+    target[offset + 2] = 0
+    target[offset + 3] = 0
+    return
+  }
+  const [red, green, blue] = heatRgb(volume)
+  target[offset] = red
+  target[offset + 1] = green
+  target[offset + 2] = blue
+  target[offset + 3] = Math.round(255 * Math.min(0.72, 0.14 + 0.62 * volume))
+}
+
+function createView() {
+  const canvas = document.getElementById('scene')
+  const viewport = document.getElementById('viewport')
+  let renderer
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
+  } catch (error) {
+    document.getElementById('glError').hidden = false
+    console.error(error)
+    return { frame: noop, ripple: noop, setMode: noop, resetCamera: noop, turnBy: noop }
+  }
+
+  const colors = {
+    bg: new THREE.Color(token('--bg')),
+    player: new THREE.Color(token('--player')),
+    enemy: new THREE.Color(token('--enemy')),
+    accent: new THREE.Color(token('--accent')),
+    fg: new THREE.Color(token('--fg')),
+    grid: new THREE.Color(token('--grid')),
+    gridMajor: new THREE.Color(token('--grid-major')),
+    muted: new THREE.Color(token('--muted'))
+  }
+  const dimEnemy = colors.bg.clone().lerp(colors.enemy, 0.38)
+
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
+  renderer.setClearColor(colors.bg)
+
+  const scene = new THREE.Scene()
+  scene.fog = new THREE.Fog(colors.bg, 120, 260)
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.5, 600)
+  const orbit = { azimuth: 0, polar: 0.9, radius: 70, goalPolar: 0.9, goalRadius: 70, target: new THREE.Vector3() }
+  const ANGLED_POLAR = 0.9
+  const TOP_POLAR = 0.04
+
+  function flatRing(inner, outer, segments) {
+    const geometry = new THREE.RingGeometry(inner, outer, segments)
+    geometry.rotateX(-Math.PI / 2)
+    return geometry
+  }
+
+  function flatDisc(radius, segments) {
+    const geometry = new THREE.CircleGeometry(radius, segments)
+    geometry.rotateX(-Math.PI / 2)
+    return geometry
+  }
+
+  function flatMaterial(color, opacity) {
+    return new THREE.MeshBasicMaterial({
+      color,
+      transparent: opacity < 1,
+      opacity,
+      depthWrite: opacity >= 1,
+      side: THREE.DoubleSide
+    })
+  }
+
+  function pickMaterial() {
+    return new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+  }
+
+  function clearGroup(group) {
+    while (group.children.length) {
+      const child = group.children.pop()
+      group.remove(child)
+      if (child.geometry) child.geometry.dispose()
+      if (child.material) {
+        if (child.material.map) child.material.map.dispose()
+        child.material.dispose()
+      }
+    }
+  }
+
+  function createLabel() {
+    const labelCanvas = document.createElement('canvas')
+    labelCanvas.width = 256
+    labelCanvas.height = 64
+    const texture = new THREE.CanvasTexture(labelCanvas)
+    texture.minFilter = THREE.LinearFilter
+    texture.generateMipmaps = false
+    const material = new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true, fog: false })
+    const sprite = new THREE.Sprite(material)
+    sprite.renderOrder = 10
+    return { sprite, canvas: labelCanvas, texture, text: '', color: '' }
+  }
+
+  function paintLabel(label, text, color) {
+    if (label.text === text && label.color === color) return
+    label.text = text
+    label.color = color
+    const ctx = label.canvas.getContext('2d')
+    ctx.clearRect(0, 0, 256, 64)
+    ctx.font = `600 28px ${MONO}`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    const textWidth = ctx.measureText(text).width
+    ctx.globalAlpha = 0.82
+    ctx.fillStyle = token('--bg')
+    ctx.fillRect(128 - textWidth / 2 - 12, 10, textWidth + 24, 44)
+    ctx.globalAlpha = 1
+    ctx.fillStyle = color
+    ctx.fillText(text, 128, 33)
+    label.texture.needsUpdate = true
+  }
+
+  const grid = new THREE.GridHelper(240, 48, colors.gridMajor, colors.grid)
+  scene.add(grid)
+
+  const playerRoot = new THREE.Group()
+  const headingGroup = new THREE.Group()
+  const rings = new THREE.Group()
+  const fovGroup = new THREE.Group()
+  playerRoot.add(rings, headingGroup)
+  headingGroup.add(fovGroup)
+  scene.add(playerRoot)
+
+  const heatCanvas = document.createElement('canvas')
+  heatCanvas.width = HEAT_SIZE
+  heatCanvas.height = HEAT_SIZE
+  const heatContext = heatCanvas.getContext('2d')
+  const heatImage = heatContext.createImageData(HEAT_SIZE, HEAT_SIZE)
+  const heatTexture = new THREE.CanvasTexture(heatCanvas)
+  const heatGeometry = new THREE.PlaneGeometry(2, 2)
+  heatGeometry.rotateX(-Math.PI / 2)
+  const heatPlane = new THREE.Mesh(
+    heatGeometry,
+    new THREE.MeshBasicMaterial({ map: heatTexture, transparent: true, depthWrite: false })
+  )
+  heatPlane.position.y = 0.04
+  heatPlane.renderOrder = 1
+  headingGroup.add(heatPlane)
+
+  const playerBody = new THREE.Group()
+  const arrowGeometry = new THREE.ConeGeometry(0.85, 2.4, 4)
+  arrowGeometry.rotateX(-Math.PI / 2)
+  const arrow = new THREE.Mesh(arrowGeometry, new THREE.MeshBasicMaterial({ color: colors.player }))
+  arrow.position.set(0, 0.9, -0.3)
+  const playerRing = new THREE.Mesh(flatRing(1.5, 1.85, 40), flatMaterial(colors.player, 0.9))
+  playerRing.position.y = 0.1
+  playerBody.add(arrow, playerRing)
+  headingGroup.add(playerBody)
+
+  const playerPick = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 5, 14), pickMaterial())
+  playerPick.userData = { kind: 'player' }
+  headingGroup.add(playerPick)
+
+  const handle = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 12), new THREE.MeshBasicMaterial({ color: colors.accent }))
+  const handlePick = new THREE.Mesh(new THREE.SphereGeometry(2.2, 12, 8), pickMaterial())
+  handlePick.userData = { kind: 'heading' }
+  const handleLineGeometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1)])
+  const handleLine = new THREE.Line(
+    handleLineGeometry,
+    new THREE.LineBasicMaterial({ color: colors.accent, transparent: true, opacity: 0.55 })
+  )
+  headingGroup.add(handle, handlePick, handleLine)
+
+  const enemyGeometry = {
+    pillar: new THREE.CylinderGeometry(0.4, 0.4, 2.6, 12),
+    head: new THREE.SphereGeometry(0.62, 14, 10),
+    base: flatRing(1.1, 1.45, 40),
+    glow: flatDisc(1.45, 40),
+    select: flatRing(1.8, 2.05, 48),
+    pick: new THREE.CylinderGeometry(2.2, 2.2, 7, 12)
+  }
+  const sharedMaterial = {
+    base: flatMaterial(colors.enemy, 0.9),
+    glow: flatMaterial(colors.enemy, 0.32),
+    select: flatMaterial(colors.accent, 1),
+    pick: pickMaterial()
+  }
+  const enemyViews = new Map()
+  const rippleGeometry = flatRing(0.94, 1, 64)
+  const ripples = []
+  const ringLabels = []
+  let markerScale = 1
+  let pickables = [playerPick, handlePick]
+  let pickDirty = false
+
+  function createEnemyView(enemy) {
+    const group = new THREE.Group()
+    const bodyMaterial = new THREE.MeshBasicMaterial({ color: colors.enemy })
+    const pillar = new THREE.Mesh(enemyGeometry.pillar, bodyMaterial)
+    pillar.position.y = 1.3
+    const head = new THREE.Mesh(enemyGeometry.head, bodyMaterial)
+    head.position.y = 3
+    const base = new THREE.Mesh(enemyGeometry.base, sharedMaterial.base)
+    base.position.y = 0.1
+    const glow = new THREE.Mesh(enemyGeometry.glow, sharedMaterial.glow)
+    glow.position.y = 0.09
+    const selectRing = new THREE.Mesh(enemyGeometry.select, sharedMaterial.select)
+    selectRing.position.y = 0.12
+    const pick = new THREE.Mesh(enemyGeometry.pick, sharedMaterial.pick)
+    pick.position.y = 3.5
+    pick.userData = { kind: 'enemy', id: enemy.id }
+    group.add(pillar, head, base, glow, selectRing, pick)
+    scene.add(group)
+    const label = createLabel()
+    scene.add(label.sprite)
+    return { group, bodyMaterial, glow, selectRing, pick, label }
+  }
+
+  function removeEnemyView(id, enemyView) {
+    scene.remove(enemyView.group)
+    scene.remove(enemyView.label.sprite)
+    enemyView.bodyMaterial.dispose()
+    enemyView.label.texture.dispose()
+    enemyView.label.sprite.material.dispose()
+    enemyViews.delete(id)
+    pickDirty = true
+  }
+
+  function syncEnemies(readings, driver) {
+    const live = new Set(world.enemies.map((enemy) => enemy.id))
+    enemyViews.forEach((enemyView, id) => {
+      if (!live.has(id)) removeEnemyView(id, enemyView)
+    })
+    const labelSize = orbit.radius * 0.042
+    const fg = token('--fg')
+    readings.forEach((reading) => {
+      const { enemy } = reading
+      let enemyView = enemyViews.get(enemy.id)
+      if (!enemyView) {
+        enemyView = createEnemyView(enemy)
+        enemyViews.set(enemy.id, enemyView)
+        pickDirty = true
+      }
+      enemyView.group.position.set(enemy.x, 0, enemy.z)
+      enemyView.group.scale.setScalar(markerScale)
+      const volume = reading.plan ? reading.plan.volume : 0
+      const heard = volume >= AUDIBLE_FLOOR
+      enemyView.bodyMaterial.color.copy(dimEnemy).lerp(colors.enemy, heard ? 0.35 + 0.65 * clamp(volume, 0, 1) : 0)
+      enemyView.glow.visible = Boolean(driver && driver.enemy.id === enemy.id)
+      enemyView.selectRing.visible = enemy.id === world.selectedId
+      paintLabel(enemyView.label, `${enemy.name} ${reading.distance.toFixed(1)} m`, fg)
+      enemyView.label.sprite.scale.set(labelSize * 4, labelSize, 1)
+      enemyView.label.sprite.position.set(enemy.x, 4.2 * markerScale + labelSize * 0.7, enemy.z)
+    })
+    if (pickDirty) {
+      pickables = [handlePick, playerPick, ...Array.from(enemyViews.values()).map((enemyView) => enemyView.pick)]
+      pickDirty = false
+    }
+  }
+
+  function ringStep(range) {
+    return [1, 2, 5, 10, 15, 20, 25, 50].find((step) => range / step <= 6) || 50
+  }
+
+  function circlePoints(radius, y) {
+    const points = []
+    for (let i = 0; i < 96; i++) {
+      const angle = (i / 96) * Math.PI * 2
+      points.push(new THREE.Vector3(Math.cos(angle) * radius, y, Math.sin(angle) * radius))
+    }
+    return points
+  }
+
+  function addRingLabel(radius, text, color, side) {
+    const label = createLabel()
+    paintLabel(label, text, color)
+    label.sprite.position.set(radius * side, 0.4, 0)
+    rings.add(label.sprite)
+    ringLabels.push(label.sprite)
+  }
+
+  function buildRings() {
+    clearGroup(rings)
+    ringLabels.length = 0
+    const range = cfg.maxRange
+    const step = ringStep(range)
+    for (let radius = step; radius < range - 0.01; radius += step) {
+      if (range - radius < step * 0.5) continue
+      const line = new THREE.LineLoop(
+        new THREE.BufferGeometry().setFromPoints(circlePoints(radius, 0.06)),
+        new THREE.LineBasicMaterial({ color: colors.gridMajor, transparent: true, opacity: 0.9 })
+      )
+      rings.add(line)
+      addRingLabel(radius, formatMeters(radius), token('--muted'), 1)
+    }
+    const outer = new THREE.Mesh(flatRing(range * 0.994, range * 1.004, 128), flatMaterial(colors.fg, 0.7))
+    outer.position.y = 0.07
+    rings.add(outer)
+    addRingLabel(range, formatMeters(range), token('--fg'), 1)
+    if (cfg.fullAt > 0.01) {
+      const full = new THREE.Mesh(flatRing(cfg.fullAt * 0.985, cfg.fullAt * 1.015, 96), flatMaterial(colors.accent, 0.85))
+      full.position.y = 0.07
+      rings.add(full)
+      addRingLabel(cfg.fullAt, formatMeters(cfg.fullAt), token('--accent'), -1)
+    }
+  }
+
+  function buildFov() {
+    clearGroup(fovGroup)
+    if (cfg.fov >= 359.5) return
+    const range = cfg.maxRange
+    const half = (cfg.fov / 2) * DEG_TO_RAD
+    const segments = Math.max(4, Math.ceil(cfg.fov / 4))
+    const arc = []
+    for (let i = 0; i <= segments; i++) {
+      const angle = -half + (2 * half * i) / segments
+      arc.push(new THREE.Vector3(range * Math.sin(angle), 0, -range * Math.cos(angle)))
+    }
+    const positions = [0, 0, 0]
+    arc.forEach((point) => positions.push(point.x, point.y, point.z))
+    const indices = []
+    for (let i = 1; i <= segments; i++) indices.push(0, i, i + 1)
+    const fillGeometry = new THREE.BufferGeometry()
+    fillGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+    fillGeometry.setIndex(indices)
+    const fill = new THREE.Mesh(fillGeometry, flatMaterial(colors.fg, 0.05))
+    fill.renderOrder = 1
+    const edge = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), ...arc, new THREE.Vector3(0, 0, 0)]),
+      new THREE.LineBasicMaterial({ color: colors.fg, transparent: true, opacity: 0.6 })
+    )
+    fovGroup.add(fill, edge)
+    fovGroup.position.y = 0.05
+  }
+
+  function applyScale() {
+    markerScale = clamp(cfg.maxRange / 22, 0.8, 3.2)
+    playerBody.scale.setScalar(markerScale)
+    playerPick.scale.setScalar(markerScale)
+    playerPick.position.y = 2.5 * markerScale
+    const reach = cfg.maxRange * 0.3
+    handle.scale.setScalar(markerScale)
+    handle.position.set(0, 0.9 * markerScale, -reach)
+    handlePick.scale.setScalar(markerScale)
+    handlePick.position.copy(handle.position)
+    handleLine.scale.z = reach
+    handleLine.position.y = 0.9 * markerScale
+  }
+
+  function paintHeat() {
+    const range = cfg.maxRange
+    const lut = new Uint8ClampedArray(LUT_SIZE * 8)
+    for (let i = 0; i < LUT_SIZE; i++) {
+      const distance = (i / (LUT_SIZE - 1)) * range
+      writeHeat(lut, i * 8, planFor(distance, true).volume)
+      writeHeat(lut, i * 8 + 4, planFor(distance, false).volume)
+    }
+    const cosHalf = Math.cos((cfg.fov / 2) * DEG_TO_RAD)
+    const data = heatImage.data
+    for (let row = 0; row < HEAT_SIZE; row++) {
+      const forward = (1 - ((row + 0.5) / HEAT_SIZE) * 2) * range
+      for (let col = 0; col < HEAT_SIZE; col++) {
+        const sideways = (((col + 0.5) / HEAT_SIZE) * 2 - 1) * range
+        const distance = Math.hypot(sideways, forward)
+        const at = (row * HEAT_SIZE + col) * 4
+        if (distance > range) {
+          data[at] = 0
+          data[at + 1] = 0
+          data[at + 2] = 0
+          data[at + 3] = 0
+          continue
+        }
+        const slot = Math.round((distance / range) * (LUT_SIZE - 1)) * 8 + (forward >= distance * cosHalf ? 0 : 4)
+        data[at] = lut[slot]
+        data[at + 1] = lut[slot + 1]
+        data[at + 2] = lut[slot + 2]
+        data[at + 3] = lut[slot + 3]
+      }
+    }
+    heatContext.putImageData(heatImage, 0, 0)
+    heatTexture.needsUpdate = true
+    heatPlane.scale.set(range, 1, range)
+  }
+
+  const built = { heat: '', fov: '', rings: '' }
+
+  function rebuildIfNeeded(cfgKey) {
+    if (cfgKey !== built.heat) {
+      built.heat = cfgKey
+      paintHeat()
+    }
+    const fovKey = `${cfg.fov}|${cfg.maxRange}`
+    if (fovKey !== built.fov) {
+      built.fov = fovKey
+      buildFov()
+    }
+    const ringKey = `${cfg.maxRange}|${cfg.fullAt}`
+    if (ringKey !== built.rings) {
+      const rangeChanged = built.rings.split('|')[0] !== String(cfg.maxRange)
+      built.rings = ringKey
+      buildRings()
+      applyScale()
+      if (rangeChanged) orbit.goalRadius = fitRadius()
+    }
+  }
+
+  function fitRadius() {
+    return clamp(cfg.maxRange * 2.9 * Math.max(1, 1.15 / camera.aspect), 25, 250)
+  }
+
+  function updateCamera(dt) {
+    const ease = reduceMotion ? 1 : 1 - Math.exp(-dt * 10)
+    orbit.polar += (orbit.goalPolar - orbit.polar) * ease
+    orbit.radius += (orbit.goalRadius - orbit.radius) * ease
+    const flat = orbit.radius * Math.sin(orbit.polar)
+    camera.position.set(
+      orbit.target.x + flat * Math.sin(orbit.azimuth),
+      orbit.target.y + orbit.radius * Math.cos(orbit.polar),
+      orbit.target.z + flat * Math.cos(orbit.azimuth)
+    )
+    camera.lookAt(orbit.target)
+  }
+
+  function spawnRipple(reading, now) {
+    const volume = clamp(reading.plan.volume, 0, 1)
+    const material = flatMaterial(colors.enemy, 0.8)
+    const mesh = new THREE.Mesh(rippleGeometry, material)
+    mesh.position.set(reading.enemy.x, 0.11, reading.enemy.z)
+    mesh.renderOrder = 3
+    scene.add(mesh)
+    ripples.push({
+      mesh,
+      born: now,
+      reach: cfg.maxRange * 0.05 + volume * cfg.maxRange * 0.22,
+      strength: 0.25 + 0.75 * volume
+    })
+  }
+
+  function updateRipples(now) {
+    for (let i = ripples.length - 1; i >= 0; i--) {
+      const ripple = ripples[i]
+      const progress = (now - ripple.born) / RIPPLE_SECONDS
+      if (progress >= 1) {
+        scene.remove(ripple.mesh)
+        ripple.mesh.material.dispose()
+        ripples.splice(i, 1)
+        continue
+      }
+      const eased = 1 - Math.pow(1 - progress, 3)
+      ripple.mesh.scale.setScalar(reduceMotion ? ripple.reach * 0.5 : lerp(1, ripple.reach, eased))
+      ripple.mesh.material.opacity = (1 - progress) * ripple.strength
+    }
+  }
+
+  const raycaster = new THREE.Raycaster()
+  const pointerNdc = new THREE.Vector2()
+  const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
+  const groundHit = new THREE.Vector3()
+  const pointers = new Map()
+  let drag = null
+
+  function aimRay(event) {
+    const rect = canvas.getBoundingClientRect()
+    pointerNdc.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1)
+    raycaster.setFromCamera(pointerNdc, camera)
+  }
+
+  function groundAt(event) {
+    aimRay(event)
+    return raycaster.ray.intersectPlane(groundPlane, groundHit)
+  }
+
+  function pickAt(event) {
+    aimRay(event)
+    const hits = raycaster.intersectObjects(pickables, false)
+    return hits.length ? hits[0].object.userData : null
+  }
+
+  function pinchDistance() {
+    const [first, second] = Array.from(pointers.values())
+    return Math.hypot(first.x - second.x, first.y - second.y)
+  }
+
+  function startObjectDrag(hit, event) {
+    const ground = groundAt(event)
+    const subject = hit.kind === 'enemy' ? findEnemy(hit.id) : world.player
+    if (hit.kind === 'enemy') world.selectedId = hit.id
+    drag = {
+      kind: hit.kind,
+      id: hit.id,
+      offsetX: ground && subject ? subject.x - ground.x : 0,
+      offsetZ: ground && subject ? subject.z - ground.z : 0
+    }
+    canvas.style.cursor = 'grabbing'
+  }
+
+  function moveObject(ground) {
+    if (drag.kind === 'heading') {
+      world.player.bearing = Math.atan2(ground.x - world.player.x, -(ground.z - world.player.z))
+      return
+    }
+    const subject = drag.kind === 'enemy' ? findEnemy(drag.id) : world.player
+    if (!subject) return
+    subject.x = clamp(ground.x + drag.offsetX, -GROUND_LIMIT, GROUND_LIMIT)
+    subject.z = clamp(ground.z + drag.offsetZ, -GROUND_LIMIT, GROUND_LIMIT)
+  }
+
+  function moveCamera(event) {
+    const dx = event.clientX - drag.x
+    const dy = event.clientY - drag.y
+    drag.x = event.clientX
+    drag.y = event.clientY
+    drag.travel += Math.abs(dx) + Math.abs(dy)
+    if (drag.kind === 'orbit') {
+      orbit.azimuth -= dx * 0.006
+      orbit.goalPolar = clamp(orbit.goalPolar - dy * 0.005, TOP_POLAR, 1.45)
+      orbit.polar = orbit.goalPolar
+      return
+    }
+    const scale = orbit.radius * 0.0016
+    const right = new THREE.Vector3(Math.cos(orbit.azimuth), 0, -Math.sin(orbit.azimuth))
+    const forward = new THREE.Vector3(-Math.sin(orbit.azimuth), 0, -Math.cos(orbit.azimuth))
+    orbit.target.addScaledVector(right, -dx * scale).addScaledVector(forward, dy * scale)
+  }
+
+  function onPointerDown(event) {
+    canvas.setPointerCapture(event.pointerId)
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    if (pointers.size === 2) {
+      drag = { kind: 'pinch', start: pinchDistance(), radius: orbit.goalRadius }
+      return
+    }
+    const hit = pickAt(event)
+    if (hit) {
+      startObjectDrag(hit, event)
+      return
+    }
+    const panning = event.button === 2 || event.shiftKey
+    drag = { kind: panning ? 'pan' : 'orbit', x: event.clientX, y: event.clientY, travel: 0 }
+  }
+
+  function onPointerMove(event) {
+    if (pointers.has(event.pointerId)) pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    if (!drag) {
+      const hit = pickAt(event)
+      canvas.style.cursor = hit ? (hit.kind === 'heading' ? 'crosshair' : 'grab') : 'default'
+      return
+    }
+    if (drag.kind === 'pinch') {
+      if (pointers.size < 2) return
+      orbit.goalRadius = clamp((drag.radius * drag.start) / Math.max(pinchDistance(), 1), 12, 260)
+      orbit.radius = orbit.goalRadius
+      return
+    }
+    if (drag.kind === 'orbit' || drag.kind === 'pan') {
+      moveCamera(event)
+      return
+    }
+    const ground = groundAt(event)
+    if (ground) moveObject(ground)
+  }
+
+  function onPointerUp(event) {
+    pointers.delete(event.pointerId)
+    if (drag && drag.kind === 'orbit' && drag.travel < 5) world.selectedId = null
+    if (drag && drag.kind === 'pinch' && pointers.size >= 2) return
+    drag = null
+    canvas.style.cursor = 'default'
+  }
+
+  function onDoubleClick(event) {
+    if (pickAt(event)) return
+    const ground = groundAt(event)
+    if (ground) addEnemy(ground.x, ground.z)
+  }
+
+  function onWheel(event) {
+    event.preventDefault()
+    orbit.goalRadius = clamp(orbit.goalRadius * Math.exp(event.deltaY * 0.0012), 12, 260)
+  }
+
+  canvas.addEventListener('pointerdown', onPointerDown)
+  canvas.addEventListener('pointermove', onPointerMove)
+  canvas.addEventListener('pointerup', onPointerUp)
+  canvas.addEventListener('pointercancel', onPointerUp)
+  canvas.addEventListener('dblclick', onDoubleClick)
+  canvas.addEventListener('wheel', onWheel, { passive: false })
+  canvas.addEventListener('contextmenu', (event) => event.preventDefault())
+
+  function resize() {
+    const width = viewport.clientWidth
+    const height = viewport.clientHeight
+    if (!width || !height) return
+    renderer.setSize(width, height, false)
+    camera.aspect = width / height
+    camera.updateProjectionMatrix()
+  }
+
+  new ResizeObserver(resize).observe(viewport)
+  resize()
+
+  return {
+    frame({ readings, driver, dt, cfgKey }) {
+      rebuildIfNeeded(cfgKey)
+      playerRoot.position.set(world.player.x, 0, world.player.z)
+      headingGroup.rotation.y = -world.player.bearing
+      updateCamera(dt)
+      syncEnemies(readings, driver)
+      const ringLabelSize = orbit.radius * 0.032
+      ringLabels.forEach((sprite) => sprite.scale.set(ringLabelSize * 4, ringLabelSize, 1))
+      updateRipples(performance.now() / 1000)
+      renderer.render(scene, camera)
+    },
+    ripple: spawnRipple,
+    setMode(mode) {
+      orbit.azimuth = 0
+      orbit.goalPolar = mode === 'top' ? TOP_POLAR : ANGLED_POLAR
+    },
+    resetCamera() {
+      orbit.azimuth = 0
+      orbit.goalPolar = ANGLED_POLAR
+      orbit.goalRadius = fitRadius()
+      orbit.target.set(0, 0, 0)
+    },
+    turnBy(degrees) {
+      world.player.bearing = wrapAngle(world.player.bearing + degrees * DEG_TO_RAD)
+    }
+  }
+}
+
+const view = createView()
+
+function onRowClick(event) {
+  const removeButton = event.target.closest('[data-remove]')
+  if (removeButton) {
+    removeEnemy(Number(removeButton.dataset.remove))
+    return
+  }
+  const row = event.target.closest('tr[data-id]')
+  if (row) world.selectedId = Number(row.dataset.id)
+}
+
+function onKeyDown(event) {
+  const tag = event.target.tagName
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
+  if ((event.key === 'Delete' || event.key === 'Backspace') && world.selectedId !== null) {
+    event.preventDefault()
+    removeEnemy(world.selectedId)
+    return
+  }
+  if (event.target.id !== 'scene') return
+  if (event.key === 'ArrowLeft') view.turnBy(-5)
+  if (event.key === 'ArrowRight') view.turnBy(5)
+}
+
+els.preset.addEventListener('change', () => applyPreset(els.preset.value))
+els.sound.addEventListener('click', toggleSound)
+els.add.addEventListener('click', addEnemyAhead)
+els.remove.addEventListener('click', () => {
+  if (world.selectedId !== null) removeEnemy(world.selectedId)
+})
+els.viewTop.addEventListener('click', () => view.setMode('top'))
+els.viewAngled.addEventListener('click', () => view.setMode('angled'))
+els.viewReset.addEventListener('click', () => view.resetCamera())
+els.copy.addEventListener('click', copySettings)
+els.rows.addEventListener('click', onRowClick)
+window.addEventListener('keydown', onKeyDown)
+if (document.fonts) {
+  document.fonts.ready.then(() => {
+    chartKey = ''
+  })
+}
+
+let lastFrame = performance.now()
+
+function tick(nowMs) {
+  const dt = Math.min((nowMs - lastFrame) / 1000, 0.1)
+  lastFrame = nowMs
+  const cfgKey = JSON.stringify(cfg)
+  const readings = world.enemies.map(evaluateEnemy)
+  const driver = pickDriver(readings)
+  stepBeeper(nowMs / 1000, driver)
+  view.frame({ readings, driver, dt, cfgKey })
+  renderReadout(readings, driver, dt)
+  renderMarkers(readings, driver)
+  renderToolbar()
+  renderCharts(driver, cfgKey)
+  requestAnimationFrame(tick)
+}
+
+buildControls()
+applyPreset('starter')
+renderSoundButton()
+requestAnimationFrame(tick)
+</script>
+</body>
+</html>

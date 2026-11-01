@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+	<head>
+		<title>FC2observvmh - Waiting for CS</title>
+		<meta charset="utf-8">
+		<link rel="icon" href="/img/icon-64x64.png" sizes="64x64" type="image/png">
+
+		<link rel="stylesheet" href="/css/main.css">
+		<link rel="stylesheet" href="/css/waiting.css">
+
+		<!-- No external font dependencies — we use a system font stack to avoid
+		     network latency on startup. The waiting page always loads, even offline. -->
+
+		<script src="/renderers/_global.js"></script>
+		<script src="/renderers/_socket.js"></script>
+
+		<!-- Detect desktop overlay mode immediately so CSS rules can fire before
+		     first paint. window.__TAURI__ is injected by the wry init script. -->
+		<script>
+			const isTauriApp = typeof window.__TAURI__ !== "undefined" || (window.chrome && window.chrome.webview);
+			if (isTauriApp) {
+				document.documentElement.classList.add("is-desktop-overlay");
+				// body may not exist yet at <head> parse time on some engines —
+				// DOMContentLoaded guarantees it is available.
+				document.addEventListener("DOMContentLoaded", function () {
+					document.body.classList.add("is-desktop-overlay");
+				}, { once: true });
+			}
+		</script>
+	</head>
+	<body>
+		<div id="dragarea" data-tauri-drag-region></div>
+
+		<div id="container">
+
+			<div id="topbar">
+				<span>
+					<img src="/img/icon.svg">
+					FC2OBSERVVMH
+					<span id="version"></span>
+				</span>
+			</div>
+
+			<div>
+				<div id="connectbolt" class="statusbox">
+					<strong>FC2OBSERVVMH</strong>
+					<span>OFFLINE</span>
+					<div>WAITING FOR APP...</div>
+				</div>
+
+				<div id="connectgameline" class="statusline">&rsaquo;</div>
+
+				<div id="connectgame" class="statusbox">
+					<strong>CS2 TELEMETRY</strong>
+					<span>NO DATA</span>
+					<div>WAITING FOR CS2...</div>
+				</div>
+
+				<div id="connectserverline" class="statusline">&rsaquo;</div>
+
+				<div id="connectserver" class="statusbox">
+					<strong>MATCH STATUS</strong>
+					<span>INACTIVE</span>
+					<div>LOBBY OR MAIN MENU</div>
+				</div>
+			</div>
+			<div id="cfgs"></div>
+		</div>
+
+
+		<script>
+
+
+			// Reload the site when a new HTML page has been rendered (Tauri / Browser)
+			socket.element.addEventListener("pageUpdate", event => {
+				window.location.replace(window.location.origin + "/");
+			})
+
+			let lastUdpTime = 0;
+
+			// If already connected on load, set FC2observvmh block immediately
+			if (socket.connected) {
+				let connectbolt = document.getElementById("connectbolt");
+				if (connectbolt) {
+					connectbolt.classList.add("connected");
+					connectbolt.querySelector("span").innerHTML = "ACTIVE";
+					connectbolt.querySelector("div").innerHTML = "BACKEND ONLINE";
+				}
+			}
+
+			// Listen for welcome data event
+			socket.element.addEventListener("welcome", event => {
+				let connectbolt = document.getElementById("connectbolt");
+				if (connectbolt) {
+					connectbolt.classList.add("connected");
+					connectbolt.querySelector("span").innerHTML = "ACTIVE";
+					connectbolt.querySelector("div").innerHTML = "BACKEND ONLINE";
+				}
+			});
+
+			// Listen for disconnect event
+			socket.element.addEventListener("close", event => {
+				let connectbolt = document.getElementById("connectbolt");
+				if (connectbolt) {
+					connectbolt.classList.remove("connected");
+					connectbolt.querySelector("span").innerHTML = "OFFLINE";
+					connectbolt.querySelector("div").innerHTML = "WAITING FOR APP...";
+				}
+			});
+
+			// Listen for live UDP packet heartbeat and update status
+			socket.element.addEventListener("connection", event => {
+				lastUdpTime = Date.now();
+
+				let connectgame = document.getElementById("connectgame");
+				if (connectgame) {
+					connectgame.classList.add("connected");
+					connectgame.querySelector("span").innerHTML = "RECEIVING";
+					connectgame.querySelector("div").innerHTML = "RECEIVING DATA";
+				}
+				let connectgameline = document.getElementById("connectgameline");
+				if (connectgameline) {
+					connectgameline.classList.add("connected");
+				}
+
+				let connectserver = document.getElementById("connectserver");
+				if (connectserver) {
+					connectserver.classList.add("connected");
+					connectserver.querySelector("span").innerHTML = "READY FOR MATCH";
+					connectserver.querySelector("div").innerHTML = "IN LOBBY";
+				}
+				let connectserverline = document.getElementById("connectserverline");
+				if (connectserverline) {
+					connectserverline.classList.add("connected");
+				}
+			});
+
+			// Run a periodic heartbeat check every 500ms
+			setInterval(() => {
+				// 1. If no UDP telemetry packets received in last 2 seconds, reset CS2 and Match Server statuses
+				if (Date.now() - lastUdpTime > 2000) {
+					let connectgame = document.getElementById("connectgame");
+					if (connectgame) {
+						connectgame.classList.remove("connected");
+						connectgame.querySelector("span").innerHTML = "NO DATA";
+						connectgame.querySelector("div").innerHTML = "WAITING FOR CS2...";
+					}
+					let connectgameline = document.getElementById("connectgameline");
+					if (connectgameline) {
+						connectgameline.classList.remove("connected");
+					}
+
+					let connectserver = document.getElementById("connectserver");
+					if (connectserver) {
+						connectserver.classList.remove("connected");
+						connectserver.querySelector("span").innerHTML = "INACTIVE";
+						connectserver.querySelector("div").innerHTML = "LOBBY OR MAIN MENU";
+					}
+					let connectserverline = document.getElementById("connectserverline");
+					if (connectserverline) {
+						connectserverline.classList.remove("connected");
+					}
+				}
+
+				// 2. Keep FC2observvmh status box in sync with connection state
+				if (!socket.connected) {
+					let connectbolt = document.getElementById("connectbolt");
+					if (connectbolt) {
+						connectbolt.classList.remove("connected");
+						connectbolt.querySelector("span").innerHTML = "OFFLINE";
+						connectbolt.querySelector("div").innerHTML = "WAITING FOR APP...";
+					}
+				} else {
+					let connectbolt = document.getElementById("connectbolt");
+					if (connectbolt && !connectbolt.classList.contains("connected")) {
+						connectbolt.classList.add("connected");
+						connectbolt.querySelector("span").innerHTML = "ACTIVE";
+						connectbolt.querySelector("div").innerHTML = "BACKEND ONLINE";
+					}
+
+					// 3. Poll doorknock periodically to check if activePage transitioned to map
+					let origin = window.location.origin;
+					if (origin.indexOf("localhost") > -1) {
+						origin = origin.replace("localhost", "127.0.0.1");
+					}
+					fetch(origin + "/doorknock")
+					.then(resp => resp.json())
+					.then(data => {
+						if (data.activePage && data.activePage !== "waiting") {
+							window.location.replace(window.location.origin + "/");
+						}
+					})
+					.catch(err => {});
+				}
+			}, 500);
+		</script>
+	</body>
+</html>

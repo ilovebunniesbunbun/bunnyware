@@ -1,0 +1,4 @@
+interface:
+  display_name: "Game Update Offsets"
+  short_description: "Refresh and validate BUNNYWARE offsets after CS2 updates"
+  default_prompt: "Use $game-update-offsets to refresh live CS2 offsets, validate them, and sync BUNNYWARE build files."

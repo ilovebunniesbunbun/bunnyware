@@ -1,0 +1,422 @@
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+	width: 6px;
+	height: 6px;
+}
+::-webkit-scrollbar-track {
+	background: rgba(255, 255, 255, 0.02);
+}
+::-webkit-scrollbar-thumb {
+	background: rgba(166, 71, 199, 0.4);
+	border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+	background: rgba(166, 71, 199, 0.6);
+}
+
+body {
+	/* Fully opaque dark gradient — visible in the browser dashboard.
+	   The semi-transparent variant looked odd on a white browser background. */
+	background: radial-gradient(circle at center, #100c18 0%, #08060c 100%) !important;
+	/* System font stack — avoids an external Google Fonts network request
+	   on every page load and removes startup latency when offline. */
+	font-family: 'Outfit', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Arial, sans-serif !important;
+	color: #fff;
+	overflow: hidden;
+}
+
+#container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: space-between;
+	width: 100vw;
+	max-width: 100vw;
+	height: 100vh;
+	max-height: 100vh;
+	box-sizing: border-box;
+	padding: 0 0 2rem 0;
+	position: relative;
+}
+
+/* Background overlay to give that dark ambient HUD feel */
+#container::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(180deg, rgba(8, 6, 12, 0.4) 0%, rgba(12, 9, 18, 0.5) 50%, rgba(8, 6, 12, 0.55) 100%);
+	z-index: 1;
+	pointer-events: none;
+}
+
+#container > * {
+	position: relative;
+	z-index: 2;
+}
+
+/* Top bar style */
+#topbar {
+	background: rgba(15, 12, 20, 0.7) !important;
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	border-bottom: 1px solid rgba(166, 71, 199, 0.2);
+	width: 100% !important;
+	padding: 1.1rem 2rem !important;
+	box-sizing: border-box;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+}
+
+#topbar span {
+	font-size: 1.25rem;
+	font-weight: 700;
+	letter-spacing: 1.5px;
+	color: #ffffff;
+	text-transform: uppercase;
+	display: flex;
+	align-items: center;
+	text-shadow: 0 0 10px rgba(166, 71, 199, 0.5);
+}
+
+#topbar span img {
+	height: 1.8rem;
+	margin-right: 0.8rem;
+	filter: drop-shadow(0 0 8px rgba(166, 71, 199, 0.8));
+	animation: beat 4s infinite ease-in-out;
+}
+
+#version {
+	font-size: 0.75rem;
+	font-weight: 400;
+	color: rgba(166, 71, 199, 0.8) !important;
+	letter-spacing: 0.5px;
+	margin-left: 0.6rem;
+	vertical-align: super;
+	text-shadow: none !important;
+}
+
+@keyframes beat {
+	0%, 100% {
+		transform: scale(1) rotate(0deg);
+	}
+	40% {
+		transform: scale(1.08) rotate(5deg);
+	}
+	50% {
+		transform: scale(1.02) rotate(-5deg);
+	}
+	60% {
+		transform: scale(1.05) rotate(3deg);
+	}
+}
+
+/* Open Config button - CS style outline */
+#openconfig {
+	display: none;
+	background: transparent;
+	border: 1px solid rgba(166, 71, 199, 0.6);
+	color: #fff;
+	padding: 0.5rem 1.4rem;
+	font-size: 0.8rem;
+	font-weight: 600;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+	border-radius: 4px;
+	cursor: pointer;
+	box-shadow: 0 0 10px rgba(166, 71, 199, 0.1);
+	transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+	-webkit-app-region: no-drag;
+}
+
+#openconfig:hover {
+	background: #a647c7;
+	border-color: #a647c7;
+	color: #fff;
+	box-shadow: 0 0 20px rgba(166, 71, 199, 0.6);
+	transform: scale(1.04);
+}
+
+#openconfig:active {
+	transform: scale(0.97);
+}
+
+/* Status area container */
+#container > div:nth-child(2) {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 2vmin;
+	margin: auto 0;
+	width: 90%;
+	max-width: 65rem;
+	perspective: 1000px;
+}
+
+/* Frosted glass status cards */
+.statusbox {
+	background: rgba(18, 14, 25, 0.6) !important;
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+	border: 1px solid rgba(255, 255, 255, 0.05);
+	color: #b5b5c3;
+	border-radius: 1.5vmin;
+	text-align: center;
+	width: 22vmin;
+	overflow: hidden;
+	box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+	transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.statusbox:hover {
+	transform: translateY(-1vmin);
+	border-color: rgba(166, 71, 199, 0.3);
+	box-shadow: 0 12px 40px rgba(166, 71, 199, 0.15);
+}
+
+.statusbox strong {
+	display: block;
+	padding: 2.2vmin 0 0.6vmin;
+	font-size: 2.2vmin;
+	font-weight: 700;
+	letter-spacing: 0.2vmin;
+	text-transform: uppercase;
+	color: #fff;
+}
+
+.statusbox > span {
+	display: block;
+	font-size: 1.7vmin;
+	font-weight: 500;
+	letter-spacing: 0.2vmin;
+	text-transform: uppercase;
+	color: rgba(255, 255, 255, 0.4);
+	padding-bottom: 2.2vmin;
+	position: relative;
+}
+
+.statusbox > span::after {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	left: 20%;
+	width: 60%;
+	height: 1px;
+	background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+}
+
+.statusbox div {
+	font-size: 1.7vmin;
+	font-weight: 500;
+	padding: 1.8vmin;
+	background: rgba(10, 8, 15, 0.6) !important;
+	color: rgba(255, 255, 255, 0.6);
+	border-top: 1px solid rgba(255, 255, 255, 0.03);
+	letter-spacing: 0.1vmin;
+}
+
+/* Connected glowing state */
+.statusbox.connected {
+	background: rgba(166, 71, 199, 0.15) !important;
+	border-color: rgba(166, 71, 199, 0.4) !important;
+	box-shadow: 0 8px 32px 0 rgba(166, 71, 199, 0.15), 0 0 15px rgba(166, 71, 199, 0.15) inset;
+}
+
+.statusbox.connected:hover {
+	border-color: rgba(166, 71, 199, 0.8) !important;
+	box-shadow: 0 12px 40px rgba(166, 71, 199, 0.3), 0 0 20px rgba(166, 71, 199, 0.2) inset;
+}
+
+.statusbox.connected strong {
+	color: #fff;
+	text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+.statusbox.connected > span {
+	color: #a647c7;
+	font-weight: 700;
+	text-shadow: 0 0 10px rgba(166, 71, 199, 0.6);
+}
+
+.statusbox.connected div {
+	color: #fff;
+	background: rgba(166, 71, 199, 0.25) !important;
+	border-top-color: rgba(166, 71, 199, 0.2);
+}
+
+/* Connection chevron paths */
+.statusline {
+	color: rgba(255, 255, 255, 0.1);
+	width: 5vmin;
+	text-align: center;
+	font-size: 5vmin;
+	font-weight: 300;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	user-select: none;
+	animation: pulseArrow 2s infinite ease-in-out;
+}
+
+.statusline.connected {
+	color: #a647c7;
+	text-shadow: 0 0 12px rgba(166, 71, 199, 0.8);
+}
+
+@keyframes pulseArrow {
+	0%, 100% {
+		opacity: 0.3;
+		transform: scale(0.95);
+	}
+	50% {
+		opacity: 0.8;
+		transform: scale(1.05);
+	}
+}
+
+/* Configs table overlay */
+#cfgs {
+	width: 100%;
+	box-sizing: border-box;
+	padding: 0 2rem;
+	cursor: default;
+	font-size: 0.85rem;
+	max-width: 65rem;
+}
+
+#cfgs > div {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	background: rgba(166, 71, 199, 0.08) !important;
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+	border: 1px solid rgba(166, 71, 199, 0.2);
+	padding: 0.8rem 1.2rem;
+	margin-bottom: 0.4rem;
+	line-height: 1.4rem;
+	width: 100%;
+	box-sizing: border-box;
+	border-radius: 8px;
+	transition: all 0.3s ease;
+}
+
+#cfgs > div:hover {
+	background: rgba(166, 71, 199, 0.15) !important;
+	border-color: rgba(166, 71, 199, 0.4);
+	box-shadow: 0 0 15px rgba(166, 71, 199, 0.15);
+	transform: scale(1.01);
+}
+
+#cfgs span {
+	font-weight: 600;
+	color: #ffffff;
+	text-transform: uppercase;
+	font-size: 0.8rem;
+	letter-spacing: 0.5px;
+	padding: 0.1rem 0.5rem;
+	background: rgba(166, 71, 199, 0.3);
+	border-radius: 4px;
+}
+
+#cfgs small {
+	font-size: inherit;
+	color: rgba(255, 255, 255, 0.7);
+	flex: 1;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	min-width: 0;
+	padding: 0 1rem;
+	font-family: monospace;
+}
+
+#cfgs button {
+	background: #a647c7;
+	border: 0;
+	color: #ffffff;
+	padding: 0.4rem 1.2rem;
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.5px;
+	cursor: pointer;
+	text-transform: uppercase;
+	border-radius: 4px;
+	box-shadow: 0 4px 10px rgba(166, 71, 199, 0.3);
+	transition: all 0.2s ease;
+}
+
+#cfgs button:hover {
+	background: #b85bd8;
+	box-shadow: 0 6px 15px rgba(166, 71, 199, 0.5);
+	transform: scale(1.05);
+}
+
+#cfgs button:active {
+	transform: scale(0.98);
+}
+
+#dragarea {
+	max-width: initial;
+	max-height: initial;
+}
+
+@media (max-width: 500px) {
+	#container > div:first-child a,
+	#container > div:first-child button,
+	#container > div:first-child section {
+		display: none !important;
+	}
+
+	#cfgs {
+		visibility: hidden;
+	}
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DESKTOP OVERLAY MODE — GPU BUDGET RULES
+   When SeenMate is running as an overlay (body.is-desktop-overlay), the
+   waiting page appears over CS2.  backdrop-filter, continuous CSS animations,
+   and semi-transparent backgrounds are expensive because the GPU compositor
+   must capture and re-composite the game frame behind them on every tick.
+
+   Measured impact before these rules:  10–15% GPU on a 2080 Ti, idle overlay.
+   After:                               < 0.5% (same as the map page idle).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* 1. Fully transparent background — let CS2 show through */
+html.is-desktop-overlay,
+html.is-desktop-overlay body {
+	background: transparent !important;
+}
+
+/* 2. Kill backdrop-filter on every element that uses it.
+      The blur forces the GPU to re-composite the full frame behind each card
+      every render cycle.  In overlay mode the "backdrop" is the live CS2 game,
+      making this even more expensive than in the static browser view. */
+html.is-desktop-overlay .statusbox,
+html.is-desktop-overlay #topbar {
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+}
+
+/* 3. Stop the logo beat animation — it is a transform+filter combo that
+      forces a GPU repaint every frame even while completely idle. */
+html.is-desktop-overlay #topbar span img {
+	animation: none !important;
+}
+
+/* 4. Stop the arrow pulse animation for the same reason. */
+html.is-desktop-overlay .statusline {
+	animation: none !important;
+}
+
+@media (max-height: 350px) {
+	#container > div:first-child section {
+		display: none;
+	}
+}

@@ -1,0 +1,43 @@
+# GDB command file: run bunnyware and capture a full crash report.
+# Used by tools/debug-crash.sh
+set pagination off
+set confirm off
+set print pretty on
+set print elements 0
+set print frame-arguments all
+set backtrace past-main on
+
+# Write everything to a log next to the repo so it can be inspected afterwards.
+set logging file crash-gdb.log
+set logging overwrite on
+set logging enabled on
+
+# Don't stop on noisy signals, but always stop on fatal ones.
+handle SIGPIPE nostop noprint pass
+handle SIGSEGV stop print nopass
+handle SIGABRT stop print nopass
+handle SIGBUS  stop print nopass
+handle SIGILL  stop print nopass
+handle SIGFPE  stop print nopass
+
+run
+
+echo \n\n===== CRASH CAPTURED =====\n
+echo \n----- faulting thread backtrace -----\n
+bt full
+echo \n----- registers -----\n
+info registers
+echo \n----- instruction at $pc -----\n
+x/8i $pc-16
+echo \n----- faulting frame -----\n
+frame 0
+info args
+info locals
+echo \n----- ImGui table state (may error if not in ImGui) -----\n
+p g.CurrentTable
+p table
+echo \n----- all threads (short backtraces) -----\n
+thread apply all bt 8
+
+echo \n===== END CRASH REPORT =====\n
+quit

@@ -1,0 +1,170 @@
+/* =======================================================
+    Responsive player icons etc
+   ======================================================= */
+
+/* DEFAULT */
+div.dot { width: 5.2vmin !important; height: 5.2vmin !important; }
+div.label { font-size: 4.2vmin !important; width: 5.2vmin !important; height: 5.2vmin !important; line-height: 5.2vmin !important; }
+#bomb { width: 2.2vmin !important; height: 2.2vmin !important; }
+#projectiles > div { width: 4vmin !important; height: 4vmin !important; }
+
+/* TABLET / HALF-SCREEN */
+@media screen and (max-width: 1500px) {
+    div.dot { width: 4.5vmin !important; height: 4.5vmin !important; }
+    div.label { font-size: 3.5vmin !important; width: 4.5vmin !important; height: 4.5vmin !important; line-height: 4.5vmin !important; }
+    #bomb { width: 1.8vmin !important; height: 1.8vmin !important; }
+    #projectiles > div { width: 3.2vmin !important; height: 3.2vmin !important; }
+}
+
+/* SMALL WINDOWS */
+@media screen and (max-width: 1100px) {
+    div.dot { width: 3.8vmin !important; height: 3.8vmin !important; }
+    div.label { font-size: 3vmin !important; width: 3.8vmin !important; height: 3.8vmin !important; line-height: 3.8vmin !important; }
+    #bomb { width: 1.5vmin !important; height: 1.5vmin !important; }
+    #projectiles > div { width: 2.8vmin !important; height: 2.8vmin !important; }
+}
+
+/* PHONE */
+@media screen and (max-width: 750px) {
+    div.dot { width: 6vmin !important; height: 6vmin !important; }
+    div.label { font-size: 5vmin !important; width: 6vmin !important; height: 6vmin !important; line-height: 6vmin !important; }
+    #bomb { width: 3vmin !important; height: 3vmin !important; }
+    #projectiles > div { width: 5vmin !important; height: 5vmin !important; }
+
+    body > div#container {
+        width: 100vw !important;
+        height: 100vw !important;
+        max-width: 100vw !important;
+        max-height: 100vh !important;
+        margin: auto !important;
+    }
+}
+
+/* 
+   ACTIVE PLAYER
+ */
+
+div.dot.active {
+    box-sizing: border-box !important;
+    border: 0.5vmin solid #fff !important; 
+    
+    box-shadow: 0 0 1vmin rgba(255, 255, 255, 0.9) !important;
+    z-index: 100 !important;
+}
+
+div.dot.flashed.active {
+    box-sizing: border-box !important;
+    border: 0.5vmin solid #fff !important; 
+    box-shadow: 0 0 1vmin rgba(255, 255, 255, 0.9), inset 0 0 2vmin 1vmin rgba(255, 255, 255, 0.8) !important;
+    z-index: 100 !important;
+}
+
+/* INVENTORY ICONS */
+.status-icon { 
+    height: 20px !important; 
+    margin-left: 6px; 
+    vertical-align: middle; 
+    -webkit-filter: brightness(0) invert(1) drop-shadow(0px 2px 2px rgba(0,0,0,0.8));
+    filter: brightness(0) invert(1) drop-shadow(0px 2px 2px rgba(0,0,0,0.8)); 
+}
+
+.inv-icon { 
+    height: 20px !important; 
+    margin-right: 6px; 
+    vertical-align: middle; 
+    /* The -webkit prefix forces iPad Safari to properly clear the graphics memory! */
+    -webkit-filter: brightness(0) invert(0.5) drop-shadow(0px 2px 2px rgba(0,0,0,0.8));
+    filter: brightness(0) invert(0.5) drop-shadow(0px 2px 2px rgba(0,0,0,0.8)); 
+    transition: all 0.2s ease; 
+}
+
+.inv-icon.nade { height: 20px !important; margin-right: 6px; }
+
+/* TERRORIST GLOW */
+.inv-icon.active-t {
+    -webkit-filter: brightness(0) invert(1) drop-shadow(0px 0px 6px #f0c941);
+    filter: brightness(0) invert(1) drop-shadow(0px 0px 6px #f0c941); 
+}
+
+/* COUNTER-TERRORIST GLOW */
+.inv-icon.active-ct {
+    -webkit-filter: brightness(0) invert(1) drop-shadow(0px 0px 6px #5ab8f4);
+    filter: brightness(0) invert(1) drop-shadow(0px 0px 6px #5ab8f4); 
+}
+
+/* Tint classes for specific items */
+.svg-blue {
+    filter: brightness(0) invert(63%) sepia(50%) saturate(1060%) hue-rotate(182deg) brightness(102%) contrast(92%) drop-shadow(0px 2px 2px rgba(0,0,0,0.8)) !important;
+}
+
+.svg-yellow {
+    filter: brightness(0) invert(79%) sepia(54%) saturate(464%) hue-rotate(346deg) brightness(102%) contrast(90%) drop-shadow(0px 2px 2px rgba(0,0,0,0.8)) !important;
+}
+
+/* Ensure C4 still glows nicely when held */
+.svg-yellow.active-t {
+    filter: brightness(0) invert(79%) sepia(54%) saturate(464%) hue-rotate(346deg) brightness(102%) contrast(90%) drop-shadow(0px 0px 6px #f0c941) !important;
+}
+
+/* Tint class for Health */
+.svg-green {
+    filter: brightness(0) invert(48%) sepia(100%) saturate(1000%) hue-rotate(80deg) brightness(120%) contrast(100%) drop-shadow(0px 2px 2px rgba(0,0,0,0.8)) !important;
+}
+
+/* Tint class for Armor */
+.svg-red {
+    filter: brightness(0) invert(15%) sepia(100%) saturate(6000%) hue-rotate(0deg) brightness(100%) contrast(100%) drop-shadow(0px 2px 2px rgba(0,0,0,0.8)) !important;
+}
+
+/* Icons for Round Phase (Top Bar) */
+.phase-icon {
+    height: 20px;
+    vertical-align: middle;
+    filter: brightness(0) invert(1) drop-shadow(0px 2px 2px rgba(0,0,0,0.8));
+    margin: 0 4px;
+}
+
+/*  BOMB & PULSE ANIMATIONS */
+.bomb-icon {
+    height: 20px;
+    margin: 0 6px;
+    vertical-align: middle;
+}
+
+/* Static Red Glow for Exploded */
+.svg-red-glow {
+    filter: brightness(0) invert(15%) sepia(100%) saturate(6000%) hue-rotate(0deg) brightness(100%) contrast(100%) drop-shadow(0px 0px 10px #f00) !important;
+}
+
+/* Yellow C4 with Red Beeping Pulse */
+.pulse-planted {
+    animation: pulse-planted-anim 0.6s ease-in-out infinite alternate;
+    will-change: filter, transform;
+}
+@keyframes pulse-planted-anim {
+    0% { transform: scale(1); filter: brightness(0) invert(79%) sepia(54%) saturate(464%) hue-rotate(346deg) brightness(102%) contrast(90%) drop-shadow(0 0 2px rgba(255,0,0,0.3)); }
+    100% { transform: scale(1.15); filter: brightness(0) invert(79%) sepia(54%) saturate(464%) hue-rotate(346deg) brightness(102%) contrast(90%) drop-shadow(0 0 15px rgba(255,0,0,1)); }
+}
+
+/* Blue C4 with Blue Pulse (Successful Defuse) */
+.pulse-defusing {
+    animation: pulse-defusing-anim 0.6s ease-in-out infinite alternate;
+    will-change: filter, transform;
+}
+@keyframes pulse-defusing-anim {
+    0% { transform: scale(1); filter: brightness(0) invert(63%) sepia(50%) saturate(1060%) hue-rotate(182deg) brightness(102%) contrast(92%) drop-shadow(0 0 2px rgba(90,184,244,0.3)); }
+    100% { transform: scale(1.15); filter: brightness(0) invert(63%) sepia(50%) saturate(1060%) hue-rotate(182deg) brightness(102%) contrast(92%) drop-shadow(0 0 15px rgba(90,184,244,1)); }
+}
+
+/* DESKTOP APP OVERLAY SPECIFIC TRANSPARENCY & LAYOUT FIXES */
+body.is-app-overlay {
+    background: transparent !important;
+}
+
+body.is-app-overlay #container {
+    width: 100vh !important;
+    height: 100vh !important;
+    max-width: 100vh !important;
+    max-height: 100vw !important;
+    margin: 0 !important;
+}
