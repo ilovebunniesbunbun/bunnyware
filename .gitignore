@@ -52,4 +52,4 @@ Thumbs.db
 .env.*
 
 # Local distribution packages (build artifacts)
-/bunnyware*.zip
+/bunnyware*.zip*
