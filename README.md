@@ -2,7 +2,15 @@
 
 When Constelia.ai/Fantasy.cat closed its doors completely back in the earlier half of this year, I saw the writing on the wall, and that it was close to being shutdown. I decided to start working on my own CS2 External Cheat to replace it and this is my version of it.
 
-**Contributors:** @remcostoeten, @anxiolytique, @lizzie731, @Chopper1337, @thenameskayla
+**Contributors:** 
+Credits to these contributors, which helped work on bunnyware
+@remcostoeten
+@anxiolytique
+@lizzie731
+@Chopper1337
+@thenameskayla
+
+Credits to @Moyomo and VacMeHarder for their work on the radar (FC2Observ) thats implemented into this proejct
 
 ![alt text](https://i.imgur.com/wlBHMOl.png)
 
