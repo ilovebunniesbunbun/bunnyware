@@ -2,60 +2,7 @@
 
 **Bunnyware CS2** is a high-performance external utility for **Counter-Strike 2 on Linux**. It renders a transparent, GPU-skinned player chams and ESP overlay with OpenGL 3.3 and Dear ImGui, driven by a multi-threaded visibility engine over direct `process_vm_readv` memory reads. Alongside the visuals it ships a per-weapon **Legit Aimbot**, a seed-aware hitchance **Triggerbot**, movement helpers, a grenade helper/solver, an embedded web radar, and a `/dev/uinput`-based input simulation layer.
 
-> [!NOTE]
-> This project is intended for educational and research purposes only. Using it on Valve matchmaking servers violates the Steam Subscriber Agreement and can result in a permanent ban. You are responsible for how you use it.
-
----
-
-## Features
-
-### Rendering & Visuals
-- **Skinned 3D player chams** — separate visible and hidden/occluded materials with flat/solid, metallic, Fresnel, glow-blend and pulsing shaders, plus optional secondary colors.
-- **Glow / stencil outline** — selectable style and thickness, health-based coloring, and pulsing.
-- **Player ESP** — bounding boxes, HP/armor/ammo bars, skeletons, head circles, names, status flags, weapon icons, hitmarkers, and off-screen arrows, with independent visible/occluded filtering, distance limiting, and hit reveals.
-- **Occlusion engine** — a GPU depth prepass for pixel-perfect wall occlusion with a multi-threaded CPU BVH raycast fallback.
-- **DamageFX** — configurable hit effects rendered as chams, particles, or a pulse.
-- **Sound ESP** — directional proximity cues for nearby enemies.
-- **Crosshair tools** — a configurable crosshair overlay with recoil expansion and unscoped-sniper support, crosshair ESP, spread circle, and crosshair-to-point distance readout.
-- **Bullet impacts** — replays the game's own impact positions, including recoil and spread.
-- **Noise ESP** — visualizes recent movement and action events around players.
-
-### Combat
-- **Legit Aimbot** — per weapon-category FOV, smoothing curves (constant / slow-end / fast-end / progressive), randomized smoothing, horizontal bias, movement prediction, overshoot humanization, a drawable FOV circle, and recoil control (RCS) with per-axis scale and smoothing.
-- **Triggerbot** — `Simple`, `Seeded`, `Hitchance`, and `Both` trigger modes; crosshair / crosshair+hitbox / hitbox auto-fire validation modes; seeded and noscope hitchance thresholds; configurable fire and between-shot delays; magnet trigger; selectable hitbox groups with scaling; smoke and visibility checks; and fire-on-target-lost.
-
-### Movement
-- **Edge Jump** — automatic jump on ledge detection with crouch-on-jump, knife-only, strafe assist, and tunable detection distances, tolerances, and delays.
-- **Counter-Strafe Coach** — an on-screen speed graph and feedback overlay for counter-strafing practice.
-
-### Grenades
-- **Grenade Helper** — lineup guidance with trace lines, visibility checks, automatic aim, and automatic throw.
-- **Grenade Solver** — solves throws and displays landing zones.
-- **Grenade Creator** — records and edits local lineups.
-- **Trajectories** — predicted grenade paths with bounce markers, detonation radius, and fade timing.
-- **Grenade timers/warnings** and **inferno spread** visualization.
-
-### World
-- **Bomb bar** and **world-space C4 timer**, plus **dropped item ESP**.
-- **Anti Flash** — replaces the flash effect with a black screen, an optional map collision wireframe, a center crosshair dot, and optional forced chams.
-- **Smoke wireframe** and **through-smokes** rendering of map geometry clipped to active smoke shapes.
-
-### Radar
-- **Embedded web radar** served over HTTP + WebSocket and viewable in any browser — see [Radar](#radar).
-
-### Menu & Configuration
-- Dear ImGui settings window with vertical tabs (**Combat, Players, World, Grenades, Misc, Radar, Config, Debug**) and a fuzzy settings search.
-- Named configuration profiles (save / load / set-default / delete) and a themeable menu appearance.
-- On-screen keybinds viewer, spectator list, and fully rebindable input keybinds.
-
-### Environment Integrations
-- Wayland **layer-shell** backend with an X11/XWayland fallback (`--x11`).
-- Hyprland window-rule support through the `bunnyware.overlay` class.
-- Display scaling / aspect-ratio mapping, GPU selection, and `/dev/uinput` virtual input simulation.
-- Auto-accept for match and ready prompts.
-- VPK parser and map-geometry extraction.
-
----
+![alt text](https://i.imgur.com/wlBHMOl.png)
 
 ## Prerequisites & Dependencies
 
