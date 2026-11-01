@@ -1,6 +1,6 @@
 # Bunnyware CS2
 
-**Bunnyware CS2** is a high-performance external utility for **Counter-Strike 2 on Linux**. It renders a transparent, GPU-skinned player chams and ESP overlay with OpenGL 3.3 and Dear ImGui, driven by a multi-threaded visibility engine over direct `process_vm_readv` memory reads. Alongside the visuals it ships a per-weapon **Legit Aimbot**, a seed-aware hitchance **Triggerbot**, movement helpers, a grenade helper/solver, an embedded web radar, and a `/dev/uinput`-based input simulation layer.
+When Constelia.ai/Fantasy.cat closed its doors completely back in the earlier half of this year, I saw the writing on the wall, and that it was close to being shutdown. I decided to start working on my own CS2 External Cheat to replace it and this is my version of it.
 
 ![alt text](https://i.imgur.com/wlBHMOl.png)
 
