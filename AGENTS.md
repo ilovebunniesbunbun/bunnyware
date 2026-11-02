@@ -43,7 +43,7 @@ Keep commits focused and describe *why* a change was made.
   - Include a 4-way offset black shadow/outline to ensure readability against dynamic 3D environments.
 
 ### 5. Running and Privileges
-- **Rule**: Direct memory reading (`process_vm_readv`) and virtual input simulation (`/dev/uinput`) require root/sudo access. When writing tests, automation scripts, or running the binary, make sure the user/process has adequate permissions.
+- **Rule**: Direct memory reading (`process_vm_readv`) and virtual input simulation (`/dev/input/event*` via evdev) require root/sudo access. When writing tests, automation scripts, or running the binary, make sure the user/process has adequate permissions.
 
 ### 6. Tests Are Opt-In
 - **Rule**: Don't add tests by default. Add one only when it guards real, non-obvious behavior, and extend the existing single-file C++ harness (`tests/cpp/test_main.cpp` + an `add_test` entry in `CMakeLists.txt`) rather than introducing anything new.

@@ -122,13 +122,13 @@ static float normalize_yaw(float yaw) {
 LegitAim::LegitAim()
 {
     try {
-        virtual_input = std::make_unique<VirtualInput>();
-        uinput_ok = true;
-        BUNNYWARE_LOG_INFO("LegitAim: VirtualInput initialized successfully.");
+        evdev_input = std::make_unique<EvdevInput>();
+        input_ok = true;
+        BUNNYWARE_LOG_INFO("LegitAim: EvdevInput initialized successfully.");
     } catch (const std::exception& e) {
         init_error = e.what();
-        uinput_ok = false;
-        BUNNYWARE_LOG_ERROR("LegitAim: Failed to initialize VirtualInput: {}", init_error);
+        input_ok = false;
+        BUNNYWARE_LOG_ERROR("LegitAim: Failed to initialize EvdevInput: {}", init_error);
     }
 }
 
@@ -143,15 +143,15 @@ glm::vec3 LegitAim::predict_target_pos(const glm::vec3& pos, const glm::vec3& ve
 
 void LegitAim::inject_mouse_move(float dx, float dy)
 {
-    if (uinput_ok && virtual_input) {
-        virtual_input->move_rel(dx, dy);
+    if (input_ok && evdev_input) {
+        evdev_input->move_rel(dx, dy);
     }
 }
 
 void LegitAim::update(const FrameInput& input, const OverlayConfig& cfg, const VischeckResult& vis_result, const glm::vec3* override_angles)
 {
     if (override_angles) {
-        if (!uinput_ok) return;
+        if (!input_ok) return;
 
         // Dynamic sensitivity scale from game memory
         float sensitivity = input.packet.local_sensitivity;
@@ -257,7 +257,7 @@ void LegitAim::update(const FrameInput& input, const OverlayConfig& cfg, const V
         return;
     }
 
-    if (!is_aim_active || !uinput_ok || !is_shootable_weapon(input.packet.held_weapon_id)) {
+    if (!is_aim_active || !input_ok || !is_shootable_weapon(input.packet.held_weapon_id)) {
         locked_entity_index = -1;
         subpixel_error = glm::vec2(0.0f);
         is_overshooting = false;

@@ -88,7 +88,7 @@ if [[ $START -eq 1 ]]; then
         SUDO=()
     else
         SUDO=(sudo)
-        warn "bunnyware needs root for /dev/uinput and process memory reads, invoking sudo"
+        warn "bunnyware needs root for /dev/input/event* input injection and process memory reads, invoking sudo"
     fi
     info "Starting bunnyware ${START_ARGS[*]:-}"
     exec "${SUDO[@]}" "./$BUILD_DIR/bunnyware" "${START_ARGS[@]}"

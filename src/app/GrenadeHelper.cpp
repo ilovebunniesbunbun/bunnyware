@@ -23,13 +23,13 @@ static int get_keybind_key(const OverlayConfig& cfg, const std::string& setting_
 GrenadeHelper::GrenadeHelper(const OverlayConfig& /*cfg*/)
 {
     try {
-        virtual_input_ = std::make_unique<VirtualInput>();
-        uinput_ok_ = true;
-        BUNNYWARE_LOG_INFO("GrenadeHelper: VirtualInput initialized successfully.");
+        evdev_input_ = std::make_unique<EvdevInput>();
+        input_ok_ = true;
+        BUNNYWARE_LOG_INFO("GrenadeHelper: EvdevInput initialized successfully.");
     } catch (const std::exception& e) {
         init_error_ = e.what();
-        uinput_ok_ = false;
-        BUNNYWARE_LOG_ERROR("GrenadeHelper: Failed to initialize VirtualInput: {}", init_error_);
+        input_ok_ = false;
+        BUNNYWARE_LOG_ERROR("GrenadeHelper: Failed to initialize EvdevInput: {}", init_error_);
     }
 }
 
@@ -61,11 +61,11 @@ int GrenadeHelper::get_modifier_key_code(const std::string& mod_name, const Over
 
 void GrenadeHelper::release_all_keys(const OverlayConfig& cfg, GlobalInputReader& global_input)
 {
-    if (!uinput_ok_ || !virtual_input_) return;
+    if (!input_ok_ || !evdev_input_) return;
 
     // Release mouse buttons
-    virtual_input_->clickr(1);
-    virtual_input_->clickr(2);
+    evdev_input_->clickr(1);
+    evdev_input_->clickr(2);
 
     // Release movement keys
     int key_codes[] = {
@@ -80,7 +80,7 @@ void GrenadeHelper::release_all_keys(const OverlayConfig& cfg, GlobalInputReader
 
     for (int code : key_codes) {
         if (code >= 0) {
-            virtual_input_->keyr(code);
+            evdev_input_->keyr(code);
         }
     }
 }
@@ -139,14 +139,14 @@ void GrenadeHelper::update(const FrameInput& input, OverlayConfig& cfg, GlobalIn
             }
             else if (throw_step_ == 3) {
                 // Click throw buttons
-                if (uinput_ok_ && virtual_input_) {
+                if (input_ok_ && evdev_input_) {
                     if (active_lineup_.movement.throw_type == "left") {
-                        virtual_input_->clickp(1);
+                        evdev_input_->clickp(1);
                     } else if (active_lineup_.movement.throw_type == "right") {
-                        virtual_input_->clickp(2);
+                        evdev_input_->clickp(2);
                     } else if (active_lineup_.movement.throw_type == "middle") {
-                        virtual_input_->clickp(1);
-                        virtual_input_->clickp(2);
+                        evdev_input_->clickp(1);
+                        evdev_input_->clickp(2);
                     }
                 }
                 // Transition to movement hold
@@ -156,10 +156,10 @@ void GrenadeHelper::update(const FrameInput& input, OverlayConfig& cfg, GlobalIn
                 double jitter = ((std::rand() % 10) - 5) / 1000.0;
                 step_duration_ = std::max(0.0, movement_sec + jitter);
 
-                if (uinput_ok_ && virtual_input_ && !active_lineup_.movement.movement_key.empty()) {
+                if (input_ok_ && evdev_input_ && !active_lineup_.movement.movement_key.empty()) {
                     int move_key = get_movement_key_code(active_lineup_.movement.movement_key, cfg, global_input);
                     if (move_key >= 0) {
-                        virtual_input_->keyp(move_key);
+                        evdev_input_->keyp(move_key);
                     }
                 }
             }
@@ -169,24 +169,24 @@ void GrenadeHelper::update(const FrameInput& input, OverlayConfig& cfg, GlobalIn
                 step_start_time_ = now;
                 step_duration_ = 0.0;
 
-                if (uinput_ok_ && virtual_input_ && active_lineup_.movement.jump) {
+                if (input_ok_ && evdev_input_ && active_lineup_.movement.jump) {
                     int jump_key = get_linux_key_helper(cfg, "key_jump", 32, global_input);
                     if (jump_key >= 0) {
-                        virtual_input_->keyp(jump_key);
+                        evdev_input_->keyp(jump_key);
                     }
                     step_duration_ = 0.020; // 20ms for jump registration
                 }
             }
             else if (throw_step_ == 6) {
                 // Release mouse button (throw!)
-                if (uinput_ok_ && virtual_input_) {
+                if (input_ok_ && evdev_input_) {
                     if (active_lineup_.movement.throw_type == "left") {
-                        virtual_input_->clickr(1);
+                        evdev_input_->clickr(1);
                     } else if (active_lineup_.movement.throw_type == "right") {
-                        virtual_input_->clickr(2);
+                        evdev_input_->clickr(2);
                     } else if (active_lineup_.movement.throw_type == "middle") {
-                        virtual_input_->clickr(1);
-                        virtual_input_->clickr(2);
+                        evdev_input_->clickr(1);
+                        evdev_input_->clickr(2);
                     }
                 }
 
@@ -298,11 +298,11 @@ void GrenadeHelper::update(const FrameInput& input, OverlayConfig& cfg, GlobalIn
                     BUNNYWARE_LOG_INFO("GrenadeHelper: Triggering throw sequence for: {}", active_lineup_.title);
 
                     // Press modifiers immediately
-                    if (uinput_ok_ && virtual_input_) {
+                    if (input_ok_ && evdev_input_) {
                         for (const auto& mod : active_lineup_.movement.modifiers) {
                             int mod_key = get_modifier_key_code(mod, cfg, global_input);
                             if (mod_key >= 0) {
-                                virtual_input_->keyp(mod_key);
+                                evdev_input_->keyp(mod_key);
                             }
                         }
                     }

@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include "config.hpp"
 #include "FrameInput.hpp"
-#include "overlay/virtual_input.hpp"
+#include "overlay/evdev_input.hpp"
 #include "overlay/global_input.hpp"
 
 #include <unordered_map>
@@ -17,7 +17,7 @@ public:
     ~TriggerBot();
 
     void update(const FrameInput& input, const OverlayConfig& cfg, GlobalInputReader& global_input, const struct VischeckResult& vischeck_result, const class VisibilityWorker& vis_worker);
-    bool is_initialized() const { return uinput_ok; }
+    bool is_initialized() const { return input_ok; }
     const std::string& get_init_error() const { return init_error; }
 
 private:
@@ -32,8 +32,8 @@ private:
     int current_delay = 0;
     int attack_button = 1; // 1 = Left Click (BTN_LEFT)
 
-    std::unique_ptr<VirtualInput> virtual_input;
-    bool uinput_ok = false;
+    std::unique_ptr<EvdevInput> evdev_input;
+    bool input_ok = false;
     std::string init_error;
 
     int last_target_entity_index = -1;

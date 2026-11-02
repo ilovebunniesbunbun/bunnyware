@@ -2,7 +2,7 @@
 
 #include "config.hpp"
 #include "overlay/game_reader.hpp"
-#include "overlay/virtual_input.hpp"
+#include "overlay/evdev_input.hpp"
 #include "FrameInput.hpp"
 
 #include <glm/glm.hpp>
@@ -55,8 +55,8 @@ private:
     bool resync_virtual_cursor();
     void inject_mouse_move(float dx, float dy);
 
-    std::unique_ptr<VirtualInput> virtual_input_;
-    bool uinput_ok_ = false;
+    std::unique_ptr<EvdevInput> evdev_input_;
+    bool input_ok_ = false;
     std::string init_error_;
 
     uintptr_t last_instance_ = 0;

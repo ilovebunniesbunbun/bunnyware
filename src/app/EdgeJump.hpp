@@ -5,7 +5,7 @@
 #include <glm/glm.hpp>
 #include "config.hpp"
 #include "FrameInput.hpp"
-#include "overlay/virtual_input.hpp"
+#include "overlay/evdev_input.hpp"
 #include "overlay/global_input.hpp"
 #include "VisibilityWorker.hpp"
 
@@ -15,12 +15,12 @@ public:
     ~EdgeJump();
 
     void update(const FrameInput& input, const OverlayConfig& cfg, GlobalInputReader& global_input, const VisibilityWorker& vis_worker);
-    bool is_initialized() const { return uinput_ok; }
+    bool is_initialized() const { return input_ok; }
     const std::string& get_init_error() const { return init_error; }
 
 private:
-    std::unique_ptr<VirtualInput> virtual_input;
-    bool uinput_ok = false;
+    std::unique_ptr<EvdevInput> evdev_input;
+    bool input_ok = false;
     std::string init_error;
 
     // Edge Jump State

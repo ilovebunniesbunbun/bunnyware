@@ -1,6 +1,5 @@
 #include "global_input.hpp"
 #include "logger.hpp"
-#include "virtual_input.hpp"
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -20,15 +19,6 @@ GlobalInputReader::GlobalInputReader()
                 if (path.find("/dev/input/event") == 0) {
                     int fd = open(path.c_str(), O_RDONLY | O_NONBLOCK);
                     if (fd >= 0) {
-                        // Skip our own uinput device so injected input is never
-                        // mistaken for the user's.
-                        char device_name[256] = {};
-                        if (ioctl(fd, EVIOCGNAME(sizeof(device_name) - 1), device_name) >= 0 &&
-                            std::strcmp(device_name, kVirtualDeviceName) == 0) {
-                            close(fd);
-                            continue;
-                        }
-
                         // Query capabilities
                         unsigned long bits[EV_MAX / 8 + 1];
                         std::memset(bits, 0, sizeof(bits));

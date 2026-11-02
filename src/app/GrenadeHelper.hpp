@@ -6,7 +6,7 @@
 #include "config.hpp"
 #include "FrameInput.hpp"
 #include "VisibilityWorker.hpp"
-#include "overlay/virtual_input.hpp"
+#include "overlay/evdev_input.hpp"
 #include "overlay/global_input.hpp"
 #include "GrenadeHelperData.hpp"
 #include "LegitAim.hpp"
@@ -24,8 +24,8 @@ public:
     const glm::vec3& get_override_angles() const { return override_angles_; }
 
 private:
-    std::unique_ptr<VirtualInput> virtual_input_;
-    bool uinput_ok_ = false;
+    std::unique_ptr<EvdevInput> evdev_input_;
+    bool input_ok_ = false;
     std::string init_error_;
 
     // State machine fields

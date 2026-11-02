@@ -41,22 +41,22 @@ static float predict_future_z(float origin_z, float vel_z, bool on_ground, float
 EdgeJump::EdgeJump()
 {
     try {
-        virtual_input = std::make_unique<VirtualInput>();
-        uinput_ok = true;
+        evdev_input = std::make_unique<EvdevInput>();
+        input_ok = true;
     } catch (const std::exception& e) {
         init_error = e.what();
-        uinput_ok = false;
-        BUNNYWARE_LOG_ERROR("EdgeJump: Failed to initialize virtual input: {}", init_error);
+        input_ok = false;
+        BUNNYWARE_LOG_ERROR("EdgeJump: Failed to initialize evdev input: {}", init_error);
     }
 }
 
 EdgeJump::~EdgeJump()
 {
-    if (uinput_ok) {
+    if (input_ok) {
         // Safe releases
         if (is_crouching) {
             // Note: Cannot call get_linux_key here easily, so we manually check standard Ctrl
-            // or we just let OS clean up virtual device when closed (which it does automatically).
+            // or we rely on EvdevInput's destructor to release the held key when it is torn down.
         }
         release_strafe_key();
     }
@@ -126,7 +126,7 @@ void EdgeJump::release_crouch(const OverlayConfig& cfg, GlobalInputReader& globa
     if (is_crouching) {
         int crouch_key = get_linux_key(cfg, "key_crouch", 341, global_input);
         if (crouch_key >= 0) {
-            virtual_input->keyr(crouch_key);
+            evdev_input->keyr(crouch_key);
             is_crouching = false;
             if (cfg.ej_debug) {
                 BUNNYWARE_LOG_INFO("[EdgeJump] Crouch Released.");
@@ -138,7 +138,7 @@ void EdgeJump::release_crouch(const OverlayConfig& cfg, GlobalInputReader& globa
 void EdgeJump::release_strafe_key()
 {
     if (current_strafe_key_code >= 0) {
-        virtual_input->keyr(current_strafe_key_code);
+        evdev_input->keyr(current_strafe_key_code);
     }
     current_strafe_key_held = "";
     current_strafe_key_code = -1;
@@ -161,7 +161,7 @@ void EdgeJump::press_strafe_key(const std::string& direction, const OverlayConfi
     if (actual_direction == "left") {
         int left_key = get_linux_key(cfg, "key_a", 65, global_input);
         if (left_key >= 0) {
-            virtual_input->keyp(left_key);
+            evdev_input->keyp(left_key);
             current_strafe_key_code = left_key;
             if (cfg.ej_debug) {
                 BUNNYWARE_LOG_INFO("[EdgeJump] Pressing LEFT (requested: {}, backwards: {})", direction, was_moving_backwards);
@@ -170,7 +170,7 @@ void EdgeJump::press_strafe_key(const std::string& direction, const OverlayConfi
     } else if (actual_direction == "right") {
         int right_key = get_linux_key(cfg, "key_d", 68, global_input);
         if (right_key >= 0) {
-            virtual_input->keyp(right_key);
+            evdev_input->keyp(right_key);
             current_strafe_key_code = right_key;
             if (cfg.ej_debug) {
                 BUNNYWARE_LOG_INFO("[EdgeJump] Pressing RIGHT (requested: {}, backwards: {})", direction, was_moving_backwards);
@@ -217,14 +217,14 @@ void EdgeJump::update(const FrameInput& input, const OverlayConfig& cfg, GlobalI
         glm::vec3 test_end(test_start.x, test_start.y, test_start.z - 200.0f);
         TraceResult test_res = vis_worker.trace_ray_bvh(test_start, test_end);
 
-        BUNNYWARE_LOG_INFO("[EdgeJump] Diagnostics | Enabled: {} | uinput: {} | Key Bind: {} | Pressed: {} | Ground: {} | Speed: {:.1f}/{} | Pos: ({:.1f}, {:.1f}, {:.1f}) | Test Ground Trace Hit: {} (Dist: {:.1f}) | Debug Circles: {}",
-                         cfg.ej_enabled, uinput_ok, activation_key, key_down,
+        BUNNYWARE_LOG_INFO("[EdgeJump] Diagnostics | Enabled: {} | input: {} | Key Bind: {} | Pressed: {} | Ground: {} | Speed: {:.1f}/{} | Pos: ({:.1f}, {:.1f}, {:.1f}) | Test Ground Trace Hit: {} (Dist: {:.1f}) | Debug Circles: {}",
+                         cfg.ej_enabled, input_ok, activation_key, key_down,
                          on_ground, actual_speed, cfg.ej_min_movement_speed,
                          input.packet.local_origin.x, input.packet.local_origin.y, input.packet.local_origin.z,
                          test_res.hit, test_res.distance, debug_circles.size());
     }
 
-    if (!uinput_ok || !cfg.ej_enabled) return;
+    if (!input_ok || !cfg.ej_enabled) return;
 
     // Handle keyup cleanups
     if (key_down != last_key_state) {
@@ -297,7 +297,7 @@ void EdgeJump::update(const FrameInput& input, const OverlayConfig& cfg, GlobalI
     static double jump_release_time = 0.0;
     static int active_jump_key = -1;
     if (active_jump_key >= 0 && now >= jump_release_time) {
-        virtual_input->keyr(active_jump_key);
+        evdev_input->keyr(active_jump_key);
         active_jump_key = -1;
     }
 
@@ -321,7 +321,7 @@ void EdgeJump::update(const FrameInput& input, const OverlayConfig& cfg, GlobalI
     if (waiting_for_jump && ((now - edge_detected_time) * 1000.0 >= cfg.ej_jump_delay_ms)) {
         int jump_key = get_linux_key(cfg, "key_jump", 32, global_input);
         if (jump_key >= 0) {
-            virtual_input->keyp(jump_key);
+            evdev_input->keyp(jump_key);
             jump_release_time = now + 0.03; // Release in 30ms
             active_jump_key = jump_key;
 
@@ -356,7 +356,7 @@ void EdgeJump::update(const FrameInput& input, const OverlayConfig& cfg, GlobalI
     // Crouch Schedule Execution
     if (scheduled_crouch_time > 0.0 && now >= scheduled_crouch_time) {
         if (scheduled_crouch_code >= 0) {
-            virtual_input->keyp(scheduled_crouch_code);
+            evdev_input->keyp(scheduled_crouch_code);
             is_crouching = true;
             if (cfg.ej_debug) {
                 BUNNYWARE_LOG_INFO("[EdgeJump] Crouch Held.");

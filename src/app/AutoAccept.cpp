@@ -39,8 +39,8 @@ AutoAccept::AutoAccept() = default;
 
 AutoAccept::~AutoAccept()
 {
-    if (uinput_ok_ && virtual_input_) {
-        virtual_input_->clickr(1);
+    if (input_ok_ && evdev_input_) {
+        evdev_input_->clickr(1);
     }
 }
 
@@ -63,30 +63,30 @@ bool AutoAccept::is_clicking() const
 void AutoAccept::suspend_input()
 {
     reset_pipeline();
-    virtual_input_.reset();
-    uinput_ok_ = false;
+    evdev_input_.reset();
+    input_ok_ = false;
     was_enabled_ = false;
     logged_setup_ = false;
 }
 
 void AutoAccept::ensure_input()
 {
-    if (uinput_ok_ || !init_error_.empty()) return;
+    if (input_ok_ || !init_error_.empty()) return;
     try {
-        virtual_input_ = std::make_unique<VirtualInput>();
-        uinput_ok_ = true;
-        BUNNYWARE_LOG_INFO("AutoAccept: VirtualInput ready");
+        evdev_input_ = std::make_unique<EvdevInput>();
+        input_ok_ = true;
+        BUNNYWARE_LOG_INFO("AutoAccept: EvdevInput ready");
     } catch (const std::exception& e) {
         init_error_ = e.what();
-        uinput_ok_ = false;
-        BUNNYWARE_LOG_ERROR("AutoAccept: VirtualInput failed: {}", init_error_);
+        input_ok_ = false;
+        BUNNYWARE_LOG_ERROR("AutoAccept: EvdevInput failed: {}", init_error_);
     }
 }
 
 void AutoAccept::reset_pipeline()
 {
-    if (uinput_ok_ && virtual_input_ && phase_ == Phase::ClickDown) {
-        virtual_input_->clickr(1);
+    if (input_ok_ && evdev_input_ && phase_ == Phase::ClickDown) {
+        evdev_input_->clickr(1);
     }
     phase_ = Phase::Idle;
     pending_since_ = 0.0;
@@ -126,12 +126,12 @@ bool AutoAccept::resync_virtual_cursor()
 
 void AutoAccept::inject_mouse_move(float dx, float dy)
 {
-    // Mirrors LegitAim::inject_mouse_move: guard on uinput then delegate to the
-    // shared VirtualInput (relative move with its own internal sub-pixel
+    // Mirrors LegitAim::inject_mouse_move: guard on input then delegate to the
+    // shared EvdevInput (relative move with its own internal sub-pixel
     // remainder accumulation). Advances the dead-reckoned cursor by the integer
     // counts we actually emitted so the next frame's delta is accurate.
-    if (!uinput_ok_ || !virtual_input_) return;
-    virtual_input_->move_rel(dx, dy);
+    if (!input_ok_ || !evdev_input_) return;
+    evdev_input_->move_rel(dx, dy);
     // move_rel rounds to whole counts internally; reflect the rounded step back
     // into the virtual cursor so subsequent frames measure the real remaining
     // distance rather than the fractional "want".
@@ -238,10 +238,10 @@ void AutoAccept::update(OverlayConfig& cfg, GameReader& reader, const FrameInput
     if (!logged_setup_) {
         BUNNYWARE_LOG_INFO(
             "AutoAccept: setup client={:#x} dwMatchSessionPointer={:#x} state_off={:#x} "
-            "delay={:.0f}ms smooth={:.1f} uinput={}",
+            "delay={:.0f}ms smooth={:.1f} input={}",
             client, session_rva, state_off,
             cfg.auto_accept_delay_ms, cfg.auto_accept_smooth,
-            uinput_ok_ ? "ok" : "fail");
+            input_ok_ ? "ok" : "fail");
         logged_setup_ = true;
     }
 
@@ -296,7 +296,7 @@ void AutoAccept::update(OverlayConfig& cfg, GameReader& reader, const FrameInput
     }
 
     // --- Click pipeline ---
-    if (uinput_ok_ && virtual_input_ && window_width > 0 && window_height > 0) {
+    if (input_ok_ && evdev_input_ && window_width > 0 && window_height > 0) {
         // The accept button sits below centre in the current CS2 match-found
         // dialog.  Target coordinates are in root-screen space, just like
         // XQueryPointer's result, so multi-monitor offsets are preserved.
@@ -346,7 +346,7 @@ void AutoAccept::update(OverlayConfig& cfg, GameReader& reader, const FrameInput
             if (std::fabs(dx) <= 15.0f && std::fabs(dy) <= 10.0f) {
                 phase_ = Phase::ClickDown;
                 phase_since_ = t;
-                virtual_input_->clickp(1);
+                evdev_input_->clickp(1);
                 BUNNYWARE_LOG_INFO(
                     "AutoAccept: on button (cursor=({:.0f},{:.0f}) target=({},{}) dist={:.1f}) — click down",
                     virtual_cursor_.x, virtual_cursor_.y, target_x, target_y, dist);
@@ -423,7 +423,7 @@ void AutoAccept::update(OverlayConfig& cfg, GameReader& reader, const FrameInput
         } else if (phase_ == Phase::ClickDown) {
             // Hold briefly then release (4–20ms style + a bit more for reliability)
             if (t - phase_since_ >= 0.020) {
-                virtual_input_->clickr(1);
+                evdev_input_->clickr(1);
                 phase_ = Phase::ClickHold;
                 phase_since_ = t;
                 clicked_this_session_ = true;
@@ -440,8 +440,8 @@ void AutoAccept::update(OverlayConfig& cfg, GameReader& reader, const FrameInput
         const double tt = now_sec();
         if (tt - last_status_log_ >= 2.0) {
             BUNNYWARE_LOG_WARN(
-                "AutoAccept: cannot click (uinput={} size={}x{})",
-                uinput_ok_ ? "ok" : "fail", window_width, window_height);
+                "AutoAccept: cannot click (input={} size={}x{})",
+                input_ok_ ? "ok" : "fail", window_width, window_height);
             last_status_log_ = tt;
         }
     }

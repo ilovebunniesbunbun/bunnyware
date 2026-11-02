@@ -6,7 +6,7 @@
 #include "config.hpp"
 #include "FrameInput.hpp"
 #include "VisibilityWorker.hpp"
-#include "overlay/virtual_input.hpp"
+#include "overlay/evdev_input.hpp"
 #include "renderer/esp_renderer.hpp"
 
 class LegitAim {
@@ -17,8 +17,8 @@ public:
     void update(const FrameInput& input, const OverlayConfig& cfg, const VischeckResult& vis_result, const glm::vec3* override_angles);
 
 private:
-    std::unique_ptr<VirtualInput> virtual_input;
-    bool uinput_ok = false;
+    std::unique_ptr<EvdevInput> evdev_input;
+    bool input_ok = false;
     std::string init_error;
 
     // Target tracking

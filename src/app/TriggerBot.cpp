@@ -366,11 +366,11 @@ static bool check_seed_hit_capsules(uint32_t seed, const glm::vec3& eye_pos, con
 TriggerBot::TriggerBot()
 {
     try {
-        virtual_input = std::make_unique<VirtualInput>();
-        uinput_ok = true;
+        evdev_input = std::make_unique<EvdevInput>();
+        input_ok = true;
     } catch (const std::exception& e) {
         init_error = e.what();
-        uinput_ok = false;
+        input_ok = false;
     }
 }
 
@@ -378,7 +378,7 @@ TriggerBot::~TriggerBot()
 {
     // click_release() is a no-op unless the button is actually down, so this
     // guarantees no held shot survives shutdown regardless of the fire path.
-    if (uinput_ok) {
+    if (input_ok) {
         click_release();
     }
 }
@@ -563,7 +563,7 @@ void TriggerBot::update(const FrameInput& input, const OverlayConfig& cfg, Globa
     last_known_kills = input.packet.local_total_kills;
 
     // 3. Early return checks for triggerbot logic
-    if (!cfg.trigger_enabled || !cfg.trigger_active || !uinput_ok || !is_shootable_weapon(input.packet.held_weapon_id)) {
+    if (!cfg.trigger_enabled || !cfg.trigger_active || !input_ok || !is_shootable_weapon(input.packet.held_weapon_id)) {
         if (held_) {
             click_release();
             held_ = false;
@@ -1289,15 +1289,15 @@ void TriggerBot::populate_prediction(const FrameInput& input, const PlayerData& 
 
 void TriggerBot::click_press()
 {
-    if (uinput_ok && virtual_input) {
-        virtual_input->clickp(attack_button);
+    if (input_ok && evdev_input) {
+        evdev_input->clickp(attack_button);
     }
 }
 
 void TriggerBot::click_release()
 {
-    if (uinput_ok && virtual_input) {
-        virtual_input->clickr(attack_button);
+    if (input_ok && evdev_input) {
+        evdev_input->clickr(attack_button);
     }
 }
 

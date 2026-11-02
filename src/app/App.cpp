@@ -2,7 +2,7 @@
 #include "TriggerBot.hpp"
 #include "external/imgui/imgui.h"
 #include "smoke_wireframe.hpp"
-#include "overlay/virtual_input.hpp"
+#include "overlay/evdev_input.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -375,7 +375,7 @@ void App::set_game_activity_allowed(bool allowed)
 {
     if (allowed == game_activity_allowed_) return;
 
-    VirtualInput::set_input_enabled(allowed);
+    EvdevInput::set_input_enabled(allowed);
     if (allowed) {
         start_input_modules();
     } else {

@@ -17,7 +17,7 @@ Credits to [@Moyomo](https://github.com/Moyomo) and [@vacmeharder](https://githu
 ## Prerequisites & Dependencies
 
 - **Operating system**: Linux (developed on Arch-based distributions; X11 or Wayland with XWayland).
-- **Privileges**: Root/`sudo` — required to open `/dev/uinput` for input simulation and to read process memory via `process_vm_readv` when `ptrace_scope` restrictions are active.
+- **Privileges**: Root/`sudo` — required for write access to `/dev/input/event*` (evdev input injection) and to read process memory via `process_vm_readv` when `ptrace_scope` restrictions are active. Alternatively, add your user to the `input` group for input injection.
 - **Compiler / build**: A C++20 compiler (GCC 10+ or Clang 11+), CMake 3.10+, and `pkgconf`.
 - **Graphics**: A driver exposing an OpenGL 3.3 compatibility profile.
 
@@ -71,7 +71,7 @@ ctest --test-dir build --output-on-failure
 ### Live mode
 
 1. Launch **Counter-Strike 2**.
-2. Run the utility as root (needed for `/dev/uinput` and process memory reads):
+2. Run the utility as root (needed for `/dev/input/event*` input injection and process memory reads):
 
    ```bash
    sudo ./build/bunnyware
@@ -191,7 +191,7 @@ The radar frontend is a C++ re-implementation inspired by **[FC2observ](https://
 
 ## Troubleshooting
 
-- **"Permission denied" / no input or no ESP data** — run as root (`sudo`). `/dev/uinput` and `process_vm_readv` both require elevated privileges.
+- **"Permission denied" / no input or no ESP data** — run as root (`sudo`). Write access to `/dev/input/event*` (or membership in the `input` group) and `process_vm_readv` both require elevated privileges.
 - **Overlay does not appear on Wayland** — the compositor may not support `wlr-layer-shell`. Try `sudo ./build/bunnyware --x11` to force the X11/XWayland backend.
 - **Broken signatures or stale data after a game update** — run `sudo ./build/bunnyware --update-offsets` to re-scan `offsets.json` from the live game.
 - **Settings not persisting** — ensure the `configs/` directory beside the binary is writable, or point `BUNNYWARE_CONFIG_DIR` at a writable location.
