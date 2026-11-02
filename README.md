@@ -9,6 +9,7 @@ Credits to these contributors, which helped work on bunnyware
 - [@lizzie731](https://github.com/lizzie731)
 - [@Chopper1337](https://github.com/Chopper1337)
 - [@thenameskayla](https://github.com/thenameskayla)
+- [@nil-commits](https://github.com/nil-commits)
 
 Credits to [@Moyomo](https://github.com/Moyomo) and [@vacmeharder](https://github.com/vacmeharder) for their work on the radar (FC2Observ) thats implemented into this project
 
