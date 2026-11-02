@@ -2,6 +2,8 @@
 
 When Constelia.ai/Fantasy.cat closed its doors completely back in the earlier half of this year, I saw the writing on the wall, and that it was close to being shutdown. I decided to start working on my own CS2 External Cheat to replace it and this is my version of it.
 
+![alt text](https://i.imgur.com/wlBHMOl.png)
+
 **Contributors:**
 Credits to these contributors, which helped work on bunnyware
 - [@remcostoeten](https://github.com/remcostoeten)
@@ -13,7 +15,7 @@ Credits to these contributors, which helped work on bunnyware
 
 Credits to [@Moyomo](https://github.com/Moyomo) and [@vacmeharder](https://github.com/vacmeharder) for their work on the radar (FC2Observ) thats implemented into this project
 
-![alt text](https://i.imgur.com/wlBHMOl.png)
+
 
 ## Prerequisites & Dependencies
 
